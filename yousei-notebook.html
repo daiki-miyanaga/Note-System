@@ -188,7 +188,7 @@
 
         .summary-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
             gap: var(--spacing-md);
         }
 
@@ -555,6 +555,76 @@
             z-index: 1000;
             pointer-events: none;
         }
+
+        /* Modal Styles */
+        .modal {
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: var(--bg-primary);
+            padding: var(--spacing-xl);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-lg);
+            width: 400px;
+            max-width: 90%;
+            position: relative;
+        }
+
+        .close {
+            position: absolute;
+            right: var(--spacing-md);
+            top: var(--spacing-md);
+            font-size: var(--font-size-xl);
+            font-weight: bold;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+
+        .close:hover {
+            color: var(--text-primary);
+        }
+
+        .form-group {
+            margin-bottom: var(--spacing-md);
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: var(--spacing-xs);
+            font-weight: var(--font-weight-medium);
+            color: var(--text-primary);
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: var(--spacing-sm);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-sm);
+            font-size: var(--font-size-base);
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
+        }
+
+        .form-actions {
+            display: flex;
+            gap: var(--spacing-md);
+            justify-content: flex-end;
+            margin-top: var(--spacing-lg);
+        }
     </style>
 </head>
 <body>
@@ -624,6 +694,14 @@
                         <div class="value" id="total-revenue">¥0</div>
                     </div>
                     <div class="summary-card">
+                        <div class="label">前年売上金額</div>
+                        <div class="value" id="prev-year-revenue">¥0</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="label">前年比</div>
+                        <div class="value" id="year-over-year">-</div>
+                    </div>
+                    <div class="summary-card">
                         <div class="label">ロス合計</div>
                         <div class="value" id="total-waste">0個</div>
                     </div>
@@ -633,11 +711,11 @@
                     </div>
                     <div class="summary-card">
                         <div class="label">D+1予算</div>
-                        <div class="value" id="d1-budget">0個 / ¥0</div>
+                        <div class="value" id="d1-budget">¥0</div>
                     </div>
                     <div class="summary-card">
                         <div class="label">D+2予算</div>
-                        <div class="value" id="d2-budget">0個 / ¥0</div>
+                        <div class="value" id="d2-budget">¥0</div>
                     </div>
                 </div>
             </section>
@@ -646,6 +724,7 @@
             <section class="toolbar-section">
                 <div class="toolbar">
                     <button id="add-row-btn" class="btn btn-secondary">➕ 行追加</button>
+                    <button id="master-register-btn" class="btn btn-secondary">📋 商品マスタ登録</button>
                     <button id="recalculate-btn" class="btn btn-secondary">🧮 再計算</button>
                     <button id="save-btn" class="btn btn-primary">💾 保存</button>
                     <button id="export-csv-btn" class="btn btn-secondary">📤 CSV出力</button>
@@ -706,6 +785,40 @@
     <!-- Alert Container -->
     <div id="alert-container"></div>
 
+    <!-- 商品マスタ登録モーダル -->
+    <div id="master-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>商品マスタ登録</h2>
+            <form id="master-form">
+                <div class="form-group">
+                    <label for="product-code">商品コード:</label>
+                    <input type="text" id="product-code" required>
+                </div>
+                <div class="form-group">
+                    <label for="product-name">商品名:</label>
+                    <input type="text" id="product-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="product-price">単価(税抜):</label>
+                    <input type="number" id="product-price" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="product-order-unit">発注単位:</label>
+                    <input type="number" id="product-order-unit" min="1" value="1" required>
+                </div>
+                <div class="form-group">
+                    <label for="product-shelf-life">日持ち(日):</label>
+                    <input type="number" id="product-shelf-life" min="1" value="2" required>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">登録</button>
+                    <button type="button" id="cancel-btn" class="btn btn-secondary">キャンセル</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         // 洋生ノート v1.2 メインアプリケーション
         class YouseiNotebook {
@@ -721,7 +834,18 @@
 
             // マスタデータ初期化
             initMasterData() {
-                return {
+                // ローカルストレージから既存のマスタデータを読み込み
+                const savedMasterData = localStorage.getItem('yousei:masterData');
+                if (savedMasterData) {
+                    try {
+                        return JSON.parse(savedMasterData);
+                    } catch (error) {
+                        console.error('マスタデータ読み込みエラー:', error);
+                    }
+                }
+                
+                // 初期マスタデータ
+                const defaultMasterData = {
                     products: [
                         { code: '3201', name: 'カスタードプリン', priceEx: 444, taxRate: 0.1, orderUnit: 6, shelfLifeDays: 2 },
                         { code: '3202', name: 'ショートケーキ', priceEx: 555, taxRate: 0.1, orderUnit: 12, shelfLifeDays: 1 },
@@ -734,6 +858,10 @@
                     ],
                     holidays: []
                 };
+                
+                // 初期マスタデータをローカルストレージに保存
+                localStorage.setItem('yousei:masterData', JSON.stringify(defaultMasterData));
+                return defaultMasterData;
             }
 
             async init() {
@@ -792,10 +920,15 @@
                             revenueEx: 0,
                             reservation: 0,
                             remarks: '',
+                            reference: '',
                             budget_d1: { qty: 0, amountEx: 0 },
                             budget_d2: { qty: 0, amountEx: 0 }
                         }));
                     }
+                    
+                    // 前日持越しデータを自動反映
+                    this.loadPreviousDayCarryover(targetDate, storeId);
+                    
                 } catch (error) {
                     console.error('データ読み込みエラー:', error);
                     this.data = [];
@@ -855,7 +988,8 @@
                     <td><div class="calculated-value">${item.salesQty || 0}</div></td>
                     <td><div class="calculated-value">¥${this.formatNumber(item.revenueEx || 0)}</div></td>
                     <td><input type="number" class="table-input" data-field="reservation" value="${item.reservation || 0}" min="0" step="1"></td>
-                    <td><input type="text" class="table-input" data-field="remarks" value="${item.remarks || ''}"></td>
+                    <td><input type="text" class="table-input" data-field="reference" value="${item.reference || ''}" ${referenceReadonly}></td>
+                    <td><input type="text" class="table-input" data-field="remarks" value="${item.remarks || ''}" ${remarksReadonly}></td>
                 `;
 
                 // 修正モード時のクリック処理
@@ -911,14 +1045,14 @@
                         </div>
                         <div class="budget-inputs">
                             <div class="budget-row">
-                                <span>D+1予算(個):</span>
-                                <input type="number" class="budget-input" data-field="budget_d1_qty" value="${item.budget_d1.qty || 0}" min="0">
-                                <span>金額: ¥${this.formatNumber((item.budget_d1.qty || 0) * item.priceEx)}</span>
+                                <span>D+1予算:</span>
+                                <input type="number" class="budget-input" data-field="budget_d1_amount" value="${item.budget_d1.amountEx || 0}" min="0" step="1">
+                                <span>円</span>
                             </div>
                             <div class="budget-row">
-                                <span>D+2予算(個):</span>
-                                <input type="number" class="budget-input" data-field="budget_d2_qty" value="${item.budget_d2.qty || 0}" min="0">
-                                <span>金額: ¥${this.formatNumber((item.budget_d2.qty || 0) * item.priceEx)}</span>
+                                <span>D+2予算:</span>
+                                <input type="number" class="budget-input" data-field="budget_d2_amount" value="${item.budget_d2.amountEx || 0}" min="0" step="1">
+                                <span>円</span>
                             </div>
                         </div>
                     </div>
@@ -969,14 +1103,20 @@
                     const d2BudgetQty = this.data.reduce((sum, item) => sum + (item.budget_d2.qty || 0), 0);
                     const d2BudgetAmount = this.data.reduce((sum, item) => sum + (item.budget_d2.amountEx || 0), 0);
 
+                    // 前年同日の売上データを取得
+                    const prevYearData = this.getPreviousYearData();
+                    const yearOverYear = this.calculateYearOverYear(totalRevenue, prevYearData.totalRevenue);
+
                     document.getElementById('item-count').textContent = `${itemCount}品`;
                     document.getElementById('total-arrival').textContent = `${totalArrival}個`;
                     document.getElementById('total-sales-qty').textContent = `${totalSalesQty}個`;
                     document.getElementById('total-revenue').textContent = `¥${this.formatNumber(totalRevenue)}`;
+                    document.getElementById('prev-year-revenue').textContent = `¥${this.formatNumber(prevYearData.totalRevenue)}`;
+                    document.getElementById('year-over-year').textContent = yearOverYear;
                     document.getElementById('total-waste').textContent = `${totalWaste}個`;
                     document.getElementById('soldout-warnings').textContent = `${soldoutWarnings}件`;
-                    document.getElementById('d1-budget').textContent = `${d1BudgetQty}個 / ¥${this.formatNumber(d1BudgetAmount)}`;
-                    document.getElementById('d2-budget').textContent = `${d2BudgetQty}個 / ¥${this.formatNumber(d2BudgetAmount)}`;
+                    document.getElementById('d1-budget').textContent = `¥${this.formatNumber(d1BudgetAmount)}`;
+                    document.getElementById('d2-budget').textContent = `¥${this.formatNumber(d2BudgetAmount)}`;
                     
                 } catch (error) {
                     console.error('サマリー更新エラー:', error);
@@ -1040,6 +1180,31 @@
 
                 document.getElementById('export-csv-btn').addEventListener('click', () => {
                     this.exportToCSV();
+                });
+
+                document.getElementById('master-register-btn').addEventListener('click', () => {
+                    this.openMasterModal();
+                });
+
+                // モーダル関連イベント
+                document.querySelector('.close').addEventListener('click', () => {
+                    this.closeMasterModal();
+                });
+
+                document.getElementById('cancel-btn').addEventListener('click', () => {
+                    this.closeMasterModal();
+                });
+
+                document.getElementById('master-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.registerProduct();
+                });
+
+                // モーダル外クリックで閉じる
+                document.getElementById('master-modal').addEventListener('click', (e) => {
+                    if (e.target === document.getElementById('master-modal')) {
+                        this.closeMasterModal();
+                    }
                 });
 
                 // キーボードショートカット
@@ -1115,21 +1280,12 @@
                     const item = this.data.find(item => item.id === this.selectedRowId);
                     if (!item) return;
 
-                    if (field === 'budget_d1_qty') {
-                        item.budget_d1.qty = value;
-                        item.budget_d1.amountEx = value * item.priceEx;
-                    } else if (field === 'budget_d2_qty') {
-                        item.budget_d2.qty = value;
-                        item.budget_d2.amountEx = value * item.priceEx;
-                    }
-
-                    // 金額表示を更新
-                    const budgetRow = input.closest('.budget-row');
-                    const amountSpan = budgetRow.querySelector('span:last-child');
-                    if (field === 'budget_d1_qty') {
-                        amountSpan.textContent = `金額: ¥${this.formatNumber(item.budget_d1.amountEx)}`;
-                    } else if (field === 'budget_d2_qty') {
-                        amountSpan.textContent = `金額: ¥${this.formatNumber(item.budget_d2.amountEx)}`;
+                    if (field === 'budget_d1_amount') {
+                        item.budget_d1.amountEx = value;
+                        item.budget_d1.qty = item.priceEx > 0 ? Math.round(value / item.priceEx) : 0;
+                    } else if (field === 'budget_d2_amount') {
+                        item.budget_d2.amountEx = value;
+                        item.budget_d2.qty = item.priceEx > 0 ? Math.round(value / item.priceEx) : 0;
                     }
                     
                     this.updateSummary();
@@ -1203,6 +1359,7 @@
                     revenueEx: 0,
                     reservation: 0,
                     remarks: '',
+                    reference: '',
                     budget_d1: { qty: 0, amountEx: 0 },
                     budget_d2: { qty: 0, amountEx: 0 }
                 };
@@ -1227,7 +1384,7 @@
                 try {
                     const headers = [
                         '商品C', '商品名', '単価(税抜)', '入荷', '前日持越し', '店間移動(±)', 'ロス', '閉店時在庫', 
-                        '完売時間', '売上個数', '売上金額(税抜)', '予約数', '備考', 
+                        '完売時間', '売上個数', '売上金額(税抜)', '予約数', '参照項目', '備考', 
                         'D+1予算(個)', 'D+1予算金額(税抜)', 'D+2予算(個)', 'D+2予算金額(税抜)'
                     ];
 
@@ -1264,6 +1421,7 @@
                             item.salesQty || 0,
                             item.revenueEx || 0,
                             item.reservation || 0,
+                            `"${item.reference || ''}"`,
                             `"${item.remarks || ''}"`,
                             item.budget_d1.qty || 0,
                             item.budget_d1.amountEx || 0,
@@ -1361,6 +1519,164 @@
                     warning: '⚠️'
                 };
                 return icons[type] || 'ℹ️';
+            }
+
+            // 前日持越しデータの自動反映
+            loadPreviousDayCarryover(targetDate, storeId) {
+                try {
+                    const target = new Date(targetDate);
+                    const prevDay = new Date(target);
+                    prevDay.setDate(target.getDate() - 1);
+                    const prevDateStr = prevDay.toISOString().slice(0, 10);
+                    
+                    const prevKey = `yousei:${storeId}:${prevDateStr}`;
+                    const prevData = localStorage.getItem(prevKey);
+                    
+                    if (prevData) {
+                        const parsed = JSON.parse(prevData);
+                        const prevDetails = parsed.details || [];
+                        
+                        // 各商品の前日閉店時在庫を前日持越しに反映
+                        this.data.forEach(item => {
+                            const prevItem = prevDetails.find(prev => prev.code === item.code);
+                            if (prevItem && prevItem.endStock > 0) {
+                                // 既存の前日持越しが0の場合のみ自動反映
+                                if (item.carryPrev === 0) {
+                                    item.carryPrev = prevItem.endStock;
+                                }
+                            }
+                        });
+                        
+                        console.log(`前日持越しデータを反映しました: ${prevDateStr}`);
+                    }
+                } catch (error) {
+                    console.error('前日持越しデータ反映エラー:', error);
+                }
+            }
+
+            // 商品マスタ登録関連メソッド
+            openMasterModal() {
+                document.getElementById('master-modal').style.display = 'flex';
+                document.getElementById('product-code').focus();
+            }
+
+            closeMasterModal() {
+                document.getElementById('master-modal').style.display = 'none';
+                document.getElementById('master-form').reset();
+            }
+
+            registerProduct() {
+                try {
+                    const code = document.getElementById('product-code').value.trim();
+                    const name = document.getElementById('product-name').value.trim();
+                    const priceEx = parseFloat(document.getElementById('product-price').value) || 0;
+                    const orderUnit = parseInt(document.getElementById('product-order-unit').value) || 1;
+                    const shelfLifeDays = parseInt(document.getElementById('product-shelf-life').value) || 2;
+
+                    // バリデーション
+                    if (!code || !name) {
+                        this.showAlert('error', '商品コードと商品名は必須です');
+                        return;
+                    }
+
+                    // 重複チェック
+                    const existingProduct = this.masterData.products.find(p => p.code === code);
+                    const existingItem = this.data.find(item => item.code === code);
+                    
+                    if (existingProduct || existingItem) {
+                        this.showAlert('error', '同じ商品コードが既に存在します');
+                        return;
+                    }
+
+                    // マスタデータに追加
+                    const newProduct = {
+                        code: code,
+                        name: name,
+                        priceEx: priceEx,
+                        taxRate: 0.1,
+                        orderUnit: orderUnit,
+                        shelfLifeDays: shelfLifeDays
+                    };
+                    this.masterData.products.push(newProduct);
+
+                    // 現在のデータに行を追加
+                    const newItem = {
+                        id: code,
+                        code: code,
+                        name: name,
+                        priceEx: priceEx,
+                        orderUnit: orderUnit,
+                        shelfLifeDays: shelfLifeDays,
+                        arrival: 0,
+                        carryPrev: 0,
+                        movement: 0,
+                        waste: 0,
+                        endStock: 0,
+                        soldoutTime: '',
+                        salesQty: 0,
+                        revenueEx: 0,
+                        reservation: 0,
+                        remarks: '',
+                        reference: '',
+                        budget_d1: { qty: 0, amountEx: 0 },
+                        budget_d2: { qty: 0, amountEx: 0 }
+                    };
+                    
+                    this.data.push(newItem);
+                    
+                    // マスタデータをローカルストレージに保存
+                    localStorage.setItem('yousei:masterData', JSON.stringify(this.masterData));
+                    
+                    // 画面を更新
+                    this.renderTable();
+                    this.updateSummary();
+                    this.markDirty();
+                    
+                    this.closeMasterModal();
+                    this.showAlert('success', `商品「${name}」を登録しました`);
+                    
+                } catch (error) {
+                    console.error('商品登録エラー:', error);
+                    this.showAlert('error', '商品の登録に失敗しました');
+                }
+            }
+
+            // 前年同日のデータ取得
+            getPreviousYearData() {
+                try {
+                    const targetDate = document.getElementById('target-date').value;
+                    const storeId = document.getElementById('store').value;
+                    const target = new Date(targetDate);
+                    const prevYear = new Date(target);
+                    prevYear.setFullYear(target.getFullYear() - 1);
+                    const prevYearDateStr = prevYear.toISOString().slice(0, 10);
+                    
+                    const prevYearKey = `yousei:${storeId}:${prevYearDateStr}`;
+                    const prevYearData = localStorage.getItem(prevYearKey);
+                    
+                    if (prevYearData) {
+                        const parsed = JSON.parse(prevYearData);
+                        const prevYearDetails = parsed.details || [];
+                        const totalRevenue = prevYearDetails.reduce((sum, item) => sum + (parseFloat(item.revenueEx) || 0), 0);
+                        return { totalRevenue, details: prevYearDetails };
+                    }
+                    
+                    return { totalRevenue: 0, details: [] };
+                } catch (error) {
+                    console.error('前年データ取得エラー:', error);
+                    return { totalRevenue: 0, details: [] };
+                }
+            }
+
+            // 前年比計算
+            calculateYearOverYear(currentRevenue, prevYearRevenue) {
+                if (prevYearRevenue === 0) {
+                    return currentRevenue > 0 ? '+∞%' : '-';
+                }
+                
+                const ratio = ((currentRevenue - prevYearRevenue) / prevYearRevenue) * 100;
+                const sign = ratio >= 0 ? '+' : '';
+                return `${sign}${ratio.toFixed(1)}%`;
             }
         }
 
