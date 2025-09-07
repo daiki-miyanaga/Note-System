@@ -1,0 +1,2302 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>洋生月間修正シート - 発注管理システム</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .main-container {
+            padding: 1rem;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        
+        .controls-section {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .period-selector {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .period-selector label {
+            font-weight: 600;
+        }
+        
+        .period-selector input {
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .summary-card {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            text-align: center;
+        }
+        
+        .summary-card h3 {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+        
+        .summary-card .value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .table-container {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .table-wrapper {
+            overflow-x: auto;
+            position: relative;
+        }
+        
+        .main-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            min-width: 1200px;
+        }
+        
+        .main-table th,
+        .main-table td {
+            padding: 0.7rem 0.5rem;
+            text-align: center;
+            border: 1px solid #e9ecef;
+            position: relative;
+            font-size: 0.85rem;
+        }
+        
+        .main-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        /* 固定列 */
+        .fixed-col {
+            position: sticky;
+            left: 0;
+            background: white;
+            z-index: 5;
+            box-shadow: 2px 0 4px rgba(0,0,0,0.1);
+        }
+        
+        .fixed-col th {
+            z-index: 15;
+            background: #f8f9fa;
+        }
+        
+        .col-product-name {
+            width: 120px;
+            text-align: left;
+            padding: 0.5rem;
+        }
+        
+        .col-price {
+            width: 80px;
+        }
+        
+        /* 日付ペア列 */
+        .date-pair-header {
+            background: #e3f2fd;
+            font-weight: bold;
+            border-left: 3px solid #2196F3;
+        }
+        
+        .current-year-col {
+            background: #fff3e0;
+            border-left: 2px solid #ff9800;
+        }
+        
+        .prev-year-col {
+            background: #f3e5f5;
+            border-right: 2px solid #9c27b0;
+        }
+        
+        .current-year-col input {
+            background: #fff8e1;
+            border: 1px solid #ffcc02;
+            border-radius: 3px;
+            padding: 0.3rem;
+            text-align: center;
+            width: 60px;
+            font-size: 0.85rem;
+        }
+        
+        .prev-year-col .ref-value {
+            color: #666;
+            font-weight: 500;
+        }
+        
+        /* コントロール行 */
+        .control-row {
+            background: #f0f8ff !important;
+            position: sticky;
+            top: 40px;
+            z-index: 8;
+        }
+        
+        .control-row td {
+            padding: 0.5rem;
+        }
+        
+        .budget-input {
+            width: 50px;
+            padding: 0.2rem;
+            text-align: center;
+            border: 1px solid #4CAF50;
+            border-radius: 3px;
+        }
+        
+        .composition-btn {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 0.3rem 0.6rem;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+        
+        .composition-btn:hover {
+            background: #1976D2;
+        }
+        
+        .total-display {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 0.8rem;
+        }
+        
+        /* バリデーション */
+        .validation-warning {
+            background: #fff3cd;
+            border-left: 3px solid #ffc107;
+        }
+        
+        .validation-error {
+            background: #f8d7da;
+            border-left: 3px solid #dc3545;
+        }
+        
+        .locked-cell {
+            background: #f5f5f5 !important;
+            color: #999;
+            cursor: not-allowed;
+        }
+        
+        /* ドロワー */
+        .drawer {
+            position: fixed;
+            right: -400px;
+            top: 0;
+            width: 400px;
+            height: 100vh;
+            background: white;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.2);
+            transition: right 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        
+        .drawer.open {
+            right: 0;
+        }
+        
+        .drawer-header {
+            background: #2196F3;
+            color: white;
+            padding: 1rem;
+            position: sticky;
+            top: 0;
+        }
+        
+        .drawer-content {
+            padding: 1rem;
+        }
+        
+        .drawer-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .drawer-row label {
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .drawer-row .value {
+            font-weight: 500;
+        }
+        
+        .drawer-actions {
+            padding: 1rem;
+            background: #f8f9fa;
+            position: sticky;
+            bottom: 0;
+        }
+        
+        .btn {
+            padding: 0.7rem 1.2rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-right: 0.5rem;
+        }
+        
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn:hover {
+            opacity: 0.9;
+        }
+        
+        /* ドロワー追加スタイル */
+        .composition-editor {
+            padding: 0;
+        }
+        
+        .composition-summary {
+            padding: 1rem 0;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 1rem;
+        }
+        
+        .composition-status {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-top: 0.5rem;
+        }
+        
+        .composition-status.valid { color: #28a745; }
+        .composition-status.warning { color: #ffc107; }
+        .composition-status.error { color: #dc3545; }
+        
+        .category-section {
+            margin-bottom: 1.5rem;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 1rem;
+        }
+        
+        .category-section h5 {
+            background: #f8f9fa;
+            margin: -1rem -1rem 1rem -1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 8px 8px 0 0;
+            border-bottom: 1px solid #e9ecef;
+            font-size: 0.9rem;
+            color: #495057;
+        }
+        
+        .composition-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.7rem 0;
+            border-bottom: 1px solid #f1f3f4;
+        }
+        
+        .composition-row:last-child {
+            border-bottom: none;
+        }
+        
+        .composition-product {
+            flex: 1;
+        }
+        
+        .product-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #2c3e50;
+        }
+        
+        .product-info {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 0.2rem;
+        }
+        
+        .composition-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .ratio-input {
+            width: 70px;
+            padding: 0.3rem;
+            text-align: center;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+        
+        .ratio-unit {
+            font-size: 0.85rem;
+            color: #666;
+        }
+        
+        .ratio-details {
+            text-align: right;
+            min-width: 70px;
+        }
+        
+        .prev-ratio {
+            font-size: 0.75rem;
+            color: #999;
+        }
+        
+        .composition-actions {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .product-details {
+            padding: 0;
+        }
+        
+        .detail-section {
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #f1f3f4;
+        }
+        
+        .detail-section:last-child {
+            border-bottom: none;
+        }
+        
+        .detail-section h4 {
+            font-size: 1rem;
+            color: #2c3e50;
+            margin-bottom: 0.7rem;
+            padding-bottom: 0.3rem;
+            border-bottom: 2px solid #e3f2fd;
+        }
+        
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.4rem 0;
+        }
+        
+        .detail-row label {
+            font-weight: 600;
+            color: #555;
+            min-width: 100px;
+        }
+        
+        .detail-row span {
+            font-weight: 500;
+            text-align: right;
+        }
+        
+        .composition-edit {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .composition-edit label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .composition-edit input {
+            width: 100px;
+            padding: 0.5rem;
+            text-align: center;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        
+        .ratio-actions {
+            margin-top: 1rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        /* バリデーション表示 */
+        .table-warnings {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 6px;
+            padding: 0.7rem;
+            margin-bottom: 1rem;
+            font-size: 0.85rem;
+        }
+        
+        .warning-item {
+            margin-bottom: 0.3rem;
+        }
+        
+        .warning-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .warning-icon {
+            color: #856404;
+            margin-right: 0.3rem;
+        }
+        
+        .error-cell {
+            background: #f8d7da !important;
+            border-color: #f5c6cb !important;
+        }
+        
+        .warning-cell {
+            background: #fff3cd !important;
+            border-color: #ffeaa7 !important;
+        }
+        
+        /* セル長押し対応 */
+        .current-year-col .readonly-qty {
+            cursor: pointer;
+            display: inline-block;
+            padding: 0.3rem;
+            border-radius: 3px;
+            transition: background-color 0.2s;
+        }
+        
+        .current-year-col .readonly-qty:hover {
+            background: #e3f2fd;
+        }
+        
+        .current-year-col .readonly-qty:active {
+            background: #bbdefb;
+        }
+        
+        /* レスポンシブ */
+        @media (max-width: 768px) {
+            .period-selector {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .summary-cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .drawer {
+                width: 100%;
+                right: -100%;
+            }
+            
+            .main-table th,
+            .main-table td {
+                font-size: 0.75rem;
+                padding: 0.5rem 0.3rem;
+            }
+            
+            .composition-row {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.5rem;
+            }
+            
+            .composition-controls {
+                justify-content: space-between;
+            }
+            
+            .detail-row {
+                flex-direction: column;
+                gap: 0.2rem;
+            }
+            
+            .detail-row label {
+                min-width: auto;
+            }
+            
+            .detail-row span {
+                text-align: left;
+            }
+            
+            .composition-actions {
+                flex-direction: column;
+            }
+            
+            .ratio-actions {
+                flex-direction: column;
+            }
+        }
+        
+        /* 一括構成比編集モーダル用CSS */
+        .bulk-composition-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            display: none;
+        }
+        
+        .bulk-composition-modal.show {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .bulk-modal-content {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 900px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .bulk-modal-header {
+            background: #2196F3;
+            color: white;
+            padding: 1.5rem;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .bulk-modal-header h3 {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+        
+        .bulk-modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .bulk-modal-close:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .bulk-modal-body {
+            padding: 1.5rem;
+        }
+        
+        .bulk-composition-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .bulk-product-card {
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 1rem;
+            background: #f8f9fa;
+        }
+        
+        .bulk-product-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.7rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .bulk-product-name {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 0.9rem;
+        }
+        
+        .bulk-product-info {
+            font-size: 0.75rem;
+            color: #666;
+        }
+        
+        .bulk-ratio-input-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .bulk-ratio-input {
+            width: 80px;
+            padding: 0.4rem;
+            text-align: center;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        
+        .bulk-ratio-unit {
+            font-size: 0.85rem;
+            color: #666;
+            min-width: 15px;
+        }
+        
+        .bulk-current-ratio {
+            font-size: 0.75rem;
+            color: #999;
+            margin-top: 0.3rem;
+        }
+        
+        .bulk-total-summary {
+            background: #e3f2fd;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        
+        .bulk-total-value {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        
+        .bulk-total-value.valid { color: #28a745; }
+        .bulk-total-value.warning { color: #ffc107; }
+        .bulk-total-value.error { color: #dc3545; }
+        
+        .bulk-modal-actions {
+            padding: 1rem 1.5rem;
+            background: #f8f9fa;
+            border-radius: 0 0 12px 12px;
+            display: flex;
+            justify-content: space-between;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .bulk-preset-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .bulk-apply-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>洋生月間修正シート</h1>
+        <div class="header-info">
+            <div>前年実績参照・曜日合わせ</div>
+            <div id="currentDateTime"></div>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <!-- 操作コントロール -->
+        <div class="controls-section">
+            <div class="period-selector">
+                <label for="startDate">期間:</label>
+                <input type="date" id="startDate" value="2025-09-01">
+                <span>〜</span>
+                <input type="date" id="endDate" value="2025-09-30">
+                <button class="btn btn-primary" onclick="loadPeriodData()">期間更新</button>
+                <button class="btn btn-secondary" onclick="syncData()">データ同期</button>
+            </div>
+            
+            <!-- 月間一括設定 -->
+            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #eee;">
+                <h4 style="margin-bottom: 0.5rem;">月間一括設定</h4>
+                
+                <!-- 予算設定 -->
+                <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem;">
+                    <div>
+                        <label for="monthlyBudgetPct">全日予算%:</label>
+                        <input type="number" id="monthlyBudgetPct" value="100" min="50" max="150" step="5" style="width: 80px; margin-left: 0.5rem;">
+                        <span>%</span>
+                    </div>
+                    <button class="btn btn-primary" onclick="applyMonthlyBudget()">全日適用</button>
+                    <button class="btn btn-secondary" onclick="resetToHQStandard()">HQ基準に戻す</button>
+                    <button class="btn btn-secondary" onclick="copyFromPreviousYear()">前年構成をコピー</button>
+                </div>
+                
+                <!-- 商品別構成比一括設定 -->
+                <div style="border-top: 1px solid #eee; padding-top: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h5 style="margin: 0;">商品別構成比一括設定</h5>
+                        <button class="btn btn-primary" onclick="openBulkCompositionModal()">構成比一括編集</button>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.5rem; font-size: 0.85rem;">
+                        <div id="bulkRatioPreview">
+                            <!-- 商品構成比プレビューが表示される -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- サマリーカード -->
+            <div class="summary-cards">
+                <div class="summary-card">
+                    <h3>対象期間</h3>
+                    <div class="value" id="periodDisplay">2025年9月</div>
+                </div>
+                <div class="summary-card">
+                    <h3>対象商品数</h3>
+                    <div class="value" id="productCount">12</div>
+                </div>
+                <div class="summary-card">
+                    <h3>期間予算合計</h3>
+                    <div class="value" id="totalBudget">¥0</div>
+                </div>
+                <div class="summary-card">
+                    <h3>前年同期実績</h3>
+                    <div class="value" id="prevYearTotal">¥0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- メインテーブル -->
+        <div class="table-container">
+            <div class="table-wrapper">
+                <table class="main-table" id="mainTable">
+                    <thead id="tableHead">
+                        <!-- 動的生成 -->
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- 動的生成 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 詳細編集ドロワー -->
+    <div class="drawer" id="editDrawer">
+        <div class="drawer-header">
+            <h3 id="drawerTitle">SKU詳細編集</h3>
+            <button onclick="closeDrawer()" style="float: right; background: none; border: none; color: white; font-size: 1.2rem;">×</button>
+        </div>
+        <div class="drawer-content" id="drawerContent">
+            <!-- 動的生成 -->
+        </div>
+        <div class="drawer-actions">
+            <button class="btn btn-primary" onclick="saveDrawerChanges()">保存</button>
+            <button class="btn btn-secondary" onclick="closeDrawer()">キャンセル</button>
+        </div>
+    </div>
+
+    <!-- 一括構成比編集モーダル -->
+    <div class="bulk-composition-modal" id="bulkCompositionModal">
+        <div class="bulk-modal-content">
+            <div class="bulk-modal-header">
+                <h3>商品別構成比一括設定</h3>
+                <button class="bulk-modal-close" onclick="closeBulkCompositionModal()">×</button>
+            </div>
+            <div class="bulk-modal-body">
+                <div class="bulk-total-summary">
+                    <div>構成比合計</div>
+                    <div class="bulk-total-value" id="bulkTotalRatio">100.0%</div>
+                    <div style="font-size: 0.85rem;">100%に近づけるよう調整してください</div>
+                </div>
+                <div class="bulk-composition-grid" id="bulkCompositionGrid">
+                    <!-- 動的生成 -->
+                </div>
+            </div>
+            <div class="bulk-modal-actions">
+                <div class="bulk-preset-actions">
+                    <button class="btn btn-secondary" onclick="setBulkHQRatios()">HQ基準</button>
+                    <button class="btn btn-secondary" onclick="setBulkPrevYearRatios()">前年構成</button>
+                    <button class="btn btn-secondary" onclick="setBulkEqualRatios()">均等配分</button>
+                </div>
+                <div class="bulk-apply-actions">
+                    <button class="btn btn-secondary" onclick="closeBulkCompositionModal()">キャンセル</button>
+                    <button class="btn btn-primary" onclick="applyBulkCompositionRatios()">全期間に適用</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // グローバル変数
+        let currentPeriod = { start: '2025-09-01', end: '2025-09-30' };
+        let productData = [];
+        let dailyBudgets = {};
+        let editingData = {};
+        
+        // 商品マスタデータ（サンプル）
+        const masterProducts = [
+            { code: '2408', name: 'カスタードプリン', price: 350, category: '洋菓子限定', lot: 6 },
+            { code: '2409', name: 'とろ生カスタードプリン', price: 350, category: '洋菓子限定', lot: 6 },
+            { code: '2410', name: '復刻カスタードプリン', price: 380, category: '洋菓子限定', lot: 6 },
+            { code: '2411', name: '濃厚あまプリン', price: 400, category: '洋菓子限定', lot: 6 },
+            { code: '2412', name: 'デンマークCC', price: 1200, category: 'デンマーク関連', lot: 2 },
+            { code: '2413', name: 'レアチーズC', price: 1000, category: 'デンマーク関連', lot: 2 },
+            { code: '2414', name: 'マンゴー&オレンジゼリー', price: 270, category: 'ゼリー', lot: 12 },
+            { code: '2415', name: 'メロン&白桃ゼリー', price: 270, category: 'ゼリー', lot: 12 },
+            { code: '2416', name: '白くまプリン', price: 450, category: 'その他', lot: 4 },
+            { code: '2417', name: 'プリンのトルテ', price: 580, category: 'その他', lot: 3 },
+            { code: '2418', name: 'マンゴーマフィン', price: 320, category: '洋菓子限定', lot: 8 },
+            { code: '2419', name: '完熟マンゴープリン', price: 420, category: '洋菓子限定', lot: 6 }
+        ];
+        
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDateTime();
+            setInterval(updateDateTime, 60000);
+            initializePeriod();
+            generateTable();
+            calculateSummary();
+        });
+        
+        // 現在日時表示
+        function updateDateTime() {
+            const now = new Date();
+            document.getElementById('currentDateTime').textContent = 
+                now.toLocaleString('ja-JP', { 
+                    month: 'long', 
+                    day: 'numeric', 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+        }
+        
+        // 期間初期化
+        function initializePeriod() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            currentPeriod = { start: startDate, end: endDate };
+            
+            // 期間表示更新
+            const startMonth = new Date(startDate).toLocaleString('ja-JP', { year: 'numeric', month: 'long' });
+            document.getElementById('periodDisplay').textContent = startMonth;
+            document.getElementById('productCount').textContent = masterProducts.length;
+        }
+        
+        // 曜日合わせの前年日付計算（詳細版）
+        function getPrevYearSameWeekday(currentDate) {
+            const current = new Date(currentDate);
+            const currentWeekday = current.getDay(); // 0=日曜, 1=月曜, ...
+            
+            // 前年同日を基準点とする
+            let prevYearDate = new Date(current.getFullYear() - 1, current.getMonth(), current.getDate());
+            
+            // 前年同日の曜日
+            const prevYearWeekday = prevYearDate.getDay();
+            
+            // 曜日差分を計算（-6〜6の範囲で調整）
+            let dayDiff = currentWeekday - prevYearWeekday;
+            
+            // より近い前年日付を選択（最大3日以内の調整）
+            if (dayDiff > 3) {
+                dayDiff -= 7;
+            } else if (dayDiff < -3) {
+                dayDiff += 7;
+            }
+            
+            prevYearDate.setDate(prevYearDate.getDate() + dayDiff);
+            
+            return prevYearDate.toISOString().split('T')[0];
+        }
+        
+        // 前年実績データベース（曜日合わせ対応）
+        const prevYearDatabase = {
+            '2024-09-02': { // 月曜日（2025/09/01の前年同曜日）
+                '2408': { qty: 45, sales: 15750 },
+                '2409': { qty: 38, sales: 13300 },
+                '2410': { qty: 32, sales: 12160 },
+                '2411': { qty: 28, sales: 11200 },
+                '2412': { qty: 12, sales: 14400 },
+                '2413': { qty: 15, sales: 15000 },
+                '2414': { qty: 22, sales: 5940 },
+                '2415': { qty: 20, sales: 5400 },
+                '2416': { qty: 18, sales: 8100 },
+                '2417': { qty: 8, sales: 4640 },
+                '2418': { qty: 15, sales: 4800 },
+                '2419': { qty: 12, sales: 5040 }
+            },
+            '2024-09-03': { // 火曜日（2025/09/02の前年同曜日）
+                '2408': { qty: 52, sales: 18200 },
+                '2409': { qty: 44, sales: 15400 },
+                '2410': { qty: 36, sales: 13680 },
+                '2411': { qty: 32, sales: 12800 },
+                '2412': { qty: 14, sales: 16800 },
+                '2413': { qty: 18, sales: 18000 },
+                '2414': { qty: 26, sales: 7020 },
+                '2415': { qty: 24, sales: 6480 },
+                '2416': { qty: 22, sales: 9900 },
+                '2417': { qty: 10, sales: 5800 },
+                '2418': { qty: 18, sales: 5760 },
+                '2419': { qty: 15, sales: 6300 }
+            },
+            '2024-09-04': { // 水曜日（2025/09/03の前年同曜日）
+                '2408': { qty: 48, sales: 16800 },
+                '2409': { qty: 40, sales: 14000 },
+                '2410': { qty: 34, sales: 12920 },
+                '2411': { qty: 30, sales: 12000 },
+                '2412': { qty: 13, sales: 15600 },
+                '2413': { qty: 16, sales: 16000 },
+                '2414': { qty: 24, sales: 6480 },
+                '2415': { qty: 22, sales: 5940 },
+                '2416': { qty: 20, sales: 9000 },
+                '2417': { qty: 9, sales: 5220 },
+                '2418': { qty: 16, sales: 5120 },
+                '2419': { qty: 13, sales: 5460 }
+            }
+        };
+        
+        // フォールバック機能付き前年データ取得
+        function getPrevYearData(productCode, targetDate) {
+            const primaryDate = getPrevYearSameWeekday(targetDate);
+            
+            // 1. 曜日合わせデータを優先取得
+            if (prevYearDatabase[primaryDate] && prevYearDatabase[primaryDate][productCode]) {
+                const data = prevYearDatabase[primaryDate][productCode];
+                const product = masterProducts.find(p => p.code === productCode);
+                return {
+                    qty: data.qty,
+                    price: product?.price || 350,
+                    sales: data.sales,
+                    source: 'same_weekday_db'
+                };
+            }
+            
+            // 2. フォールバック：月間平均データ生成
+            const product = masterProducts.find(p => p.code === productCode);
+            const baseQty = getHQBaseQuantity(productCode);
+            const weekdayMultiplier = getWeekdayMultiplier(new Date(targetDate).getDay());
+            
+            const estimatedQty = Math.round(baseQty * weekdayMultiplier);
+            const estimatedSales = estimatedQty * (product?.price || 350);
+            
+            return {
+                qty: estimatedQty,
+                price: product?.price || 350,
+                sales: estimatedSales,
+                source: 'estimated'
+            };
+        }
+        
+        // HQ基準数量取得
+        function getHQBaseQuantity(productCode) {
+            const hqBaseQty = {
+                '2408': 40, '2409': 35, '2410': 30, '2411': 25,
+                '2412': 12, '2413': 15, '2414': 20, '2415': 18,
+                '2416': 16, '2417': 8, '2418': 12, '2419': 10
+            };
+            return hqBaseQty[productCode] || 15;
+        }
+        
+        // 曜日別売上係数
+        function getWeekdayMultiplier(dayOfWeek) {
+            const multipliers = {
+                0: 0.8,  // 日曜日
+                1: 1.0,  // 月曜日
+                2: 1.2,  // 火曜日
+                3: 1.1,  // 水曜日
+                4: 1.3,  // 木曜日
+                5: 1.5,  // 金曜日
+                6: 1.4   // 土曜日
+            };
+            return multipliers[dayOfWeek] || 1.0;
+        }
+        
+        // 日付ペア生成
+        function generateDatePairs() {
+            const pairs = [];
+            const start = new Date(currentPeriod.start);
+            const end = new Date(currentPeriod.end);
+            
+            for (let date = start; date <= end; date.setDate(date.getDate() + 1)) {
+                const currentDateStr = date.toISOString().split('T')[0];
+                const prevYearDate = getPrevYearSameWeekday(currentDateStr);
+                pairs.push({
+                    current: currentDateStr,
+                    prev: prevYearDate
+                });
+            }
+            return pairs;
+        }
+        
+        // テーブル生成
+        function generateTable() {
+            const datePairs = generateDatePairs();
+            generateTableHeader(datePairs);
+            generateTableBody(datePairs);
+        }
+        
+        // テーブルヘッダー生成
+        function generateTableHeader(datePairs) {
+            const thead = document.getElementById('tableHead');
+            thead.innerHTML = '';
+            
+            // メインヘッダー行
+            const headerRow = document.createElement('tr');
+            headerRow.innerHTML = `
+                <th class="fixed-col col-product-name">商品名</th>
+                <th class="fixed-col col-price">単価</th>
+            `;
+            
+            datePairs.forEach(pair => {
+                const currentDate = new Date(pair.current);
+                const prevDate = new Date(pair.prev);
+                headerRow.innerHTML += `
+                    <th class="date-pair-header" colspan="2">
+                        ${currentDate.toLocaleDateString('ja-JP', { month: '2-digit', day: '2-digit' })} / 
+                        ${prevDate.toLocaleDateString('ja-JP', { month: '2-digit', day: '2-digit' })}
+                    </th>
+                `;
+            });
+            
+            thead.appendChild(headerRow);
+            
+            // サブヘッダー行（当年/前年）
+            const subHeaderRow = document.createElement('tr');
+            subHeaderRow.innerHTML = `
+                <th class="fixed-col"></th>
+                <th class="fixed-col"></th>
+            `;
+            
+            datePairs.forEach(() => {
+                subHeaderRow.innerHTML += `
+                    <th class="current-year-col">計画</th>
+                    <th class="prev-year-col">前年</th>
+                `;
+            });
+            
+            thead.appendChild(subHeaderRow);
+            
+            // コントロール行
+            const controlRow = document.createElement('tr');
+            controlRow.className = 'control-row';
+            controlRow.innerHTML = `
+                <td class="fixed-col"><strong>日別操作</strong></td>
+                <td class="fixed-col"><strong>予算%</strong></td>
+            `;
+            
+            datePairs.forEach(pair => {
+                controlRow.innerHTML += `
+                    <td class="current-year-col">
+                        <input type="number" class="budget-input" value="100" 
+                               onchange="updateDayBudget('${pair.current}', this.value)">%
+                        <br>
+                        <button class="composition-btn" 
+                                onclick="openCompositionModal('${pair.current}')">構成比</button>
+                        <br>
+                        <div class="total-display" id="total-${pair.current}">¥0</div>
+                    </td>
+                    <td class="prev-year-col">
+                        <div class="total-display" id="prev-total-${pair.prev}">¥0</div>
+                    </td>
+                `;
+                
+                // 予算初期化
+                dailyBudgets[pair.current] = 100;
+            });
+            
+            thead.appendChild(controlRow);
+        }
+        
+        // テーブルボディ生成
+        function generateTableBody(datePairs) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            
+            masterProducts.forEach(product => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="fixed-col col-product-name">
+                        <div style="line-height: 1.2;">
+                            <div style="font-weight: bold;">${product.name}</div>
+                            <div style="font-size: 0.75em; color: #666;">CODE: ${product.code}</div>
+                        </div>
+                    </td>
+                    <td class="fixed-col col-price">¥${product.price.toLocaleString()}</td>
+                `;
+                
+                datePairs.forEach(pair => {
+                    // 前年データを曜日合わせで取得
+                    const prevData = getPrevYearData(product.code, pair.current);
+                    
+                    row.innerHTML += `
+                        <td class="current-year-col">
+                            <span class="readonly-qty" id="qty-${product.code}-${pair.current}" 
+                                  onclick="openProductDrawer('${product.code}', '${pair.current}')">0</span>
+                        </td>
+                        <td class="prev-year-col">
+                            <span class="ref-value" title="前年実績: ${prevData.source}">${prevData.qty}</span>
+                        </td>
+                    `;
+                });
+                
+                tbody.appendChild(row);
+            });
+        }
+        
+        // 期間データ読み込み
+        function loadPeriodData() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            
+            if (!startDate || !endDate) {
+                alert('期間を正しく選択してください');
+                return;
+            }
+            
+            if (new Date(startDate) > new Date(endDate)) {
+                alert('開始日は終了日より前に設定してください');
+                return;
+            }
+            
+            currentPeriod = { start: startDate, end: endDate };
+            initializePeriod();
+            generateTable();
+            calculateAllDays();
+        }
+        
+        // 日別予算更新
+        function updateDayBudget(date, budgetPct) {
+            dailyBudgets[date] = parseFloat(budgetPct) || 100;
+            calculateDayQuantities(date);
+            updateDayTotal(date);
+            calculateSummary();
+        }
+        
+        // 計算エンジン（構成比→数量→金額）
+        function calculateDayQuantities(date) {
+            const prevDate = getPrevYearSameWeekday(date);
+            const budgetPct = dailyBudgets[date] || 100;
+            
+            // Step 1: 前年データ収集とS_prev計算
+            let prevTotalSales = 0;
+            const prevDataMap = {};
+            
+            masterProducts.forEach(product => {
+                const prevData = getPrevYearData(product.code, date);
+                prevDataMap[product.code] = prevData;
+                prevTotalSales += prevData.qty * prevData.price;
+            });
+            
+            // Step 2: 当日目標売上計算（前年実績 × 予算%）
+            const targetSales = prevTotalSales * (budgetPct / 100);
+            
+            // Step 3: 有効構成比決定（store → prev → hq の優先順）
+            const effectiveRatios = {};
+            let ratioSum = 0;
+            
+            masterProducts.forEach(product => {
+                const storeRatio = getStoreRatio(date, product.code);
+                const prevData = prevDataMap[product.code];
+                const prevRatio = prevTotalSales > 0 ? (prevData.qty * prevData.price) / prevTotalSales : 0;
+                const hqRatio = getHQRatio(product.code);
+                
+                // 優先順位に従って構成比決定
+                const ratio = storeRatio !== null ? storeRatio : 
+                             (prevRatio > 0 ? prevRatio : hqRatio);
+                
+                effectiveRatios[product.code] = ratio;
+                ratioSum += ratio;
+            });
+            
+            // Step 4: 構成比整合性チェック（自動再配分）
+            if (Math.abs(ratioSum - 1.0) > 0.005) { // ±0.5%を超える場合
+                redistributeRatios(effectiveRatios, date);
+                ratioSum = Object.values(effectiveRatios).reduce((a, b) => a + b, 0);
+            }
+            
+            // Step 5: SKU別割当→数量→金額計算
+            const dayResults = {};
+            let totalCalculatedAmount = 0;
+            
+            masterProducts.forEach(product => {
+                const ratio = effectiveRatios[product.code];
+                
+                // 割当売上計算
+                const allocatedSales = targetSales * ratio;
+                
+                // 生数量計算
+                const rawQty = allocatedSales / product.price;
+                
+                // ロット丸め（既定：切上げ）
+                const roundedQty = roundByLot(rawQty, product.lot, 'ceil');
+                
+                // 実際金額
+                const actualAmount = roundedQty * product.price;
+                
+                dayResults[product.code] = {
+                    ratio: ratio,
+                    allocatedSales: allocatedSales,
+                    rawQty: rawQty,
+                    qty: roundedQty,
+                    amount: actualAmount,
+                    product: product
+                };
+                
+                totalCalculatedAmount += actualAmount;
+                
+                // 表示更新
+                updateProductDisplay(product.code, date, roundedQty, actualAmount);
+            });
+            
+            // Step 6: 合計差分吸収（必要時）
+            const amountDiff = totalCalculatedAmount - targetSales;
+            if (Math.abs(amountDiff) > targetSales * 0.01) { // 1%を超える誤差
+                absorbAmountDifference(dayResults, amountDiff, date);
+            }
+            
+            return dayResults;
+        }
+        
+        // ロット丸め処理
+        function roundByLot(rawQty, lot, rule = 'ceil') {
+            if (!lot || lot <= 0) lot = 1;
+            
+            switch (rule) {
+                case 'ceil':
+                    return Math.ceil(rawQty / lot) * lot;
+                case 'floor':
+                    return Math.floor(rawQty / lot) * lot;
+                case 'round':
+                default:
+                    return Math.round(rawQty / lot) * lot;
+            }
+        }
+        
+        // 店舗修正構成比取得
+        function getStoreRatio(date, productCode) {
+            // 実際は localStorage や sessionStorage から取得
+            const key = `store_ratio_${date}_${productCode}`;
+            const stored = localStorage.getItem(key);
+            return stored ? parseFloat(stored) : null;
+        }
+        
+        // HQ基準構成比取得
+        function getHQRatio(productCode) {
+            // 実際は API から取得
+            const hqRatios = {
+                '2408': 0.15, // カスタードプリン 15%
+                '2409': 0.12, // とろ生カスタード 12%
+                '2410': 0.10, // 復刻カスタード 10%
+                '2411': 0.08, // 濃厚あまプリン 8%
+                '2412': 0.15, // デンマークCC 15%
+                '2413': 0.10, // レアチーズC 10%
+                '2414': 0.06, // マンゴー&オレンジ 6%
+                '2415': 0.06, // メロン&白桃 6%
+                '2416': 0.08, // 白くまプリン 8%
+                '2417': 0.05, // プリンのトルテ 5%
+                '2418': 0.03, // マンゴーマフィン 3%
+                '2419': 0.02  // 完熟マンゴー 2%
+            };
+            return hqRatios[productCode] || 0.05; // 既定5%
+        }
+        
+        // 構成比自動再配分
+        function redistributeRatios(ratios, date) {
+            const lockedProducts = getLockedProducts(date);
+            const adjustableProducts = masterProducts.filter(p => !lockedProducts.includes(p.code));
+            
+            if (adjustableProducts.length === 0) return;
+            
+            // ロック済み商品の構成比合計
+            const lockedSum = lockedProducts.reduce((sum, code) => sum + (ratios[code] || 0), 0);
+            const remainingRatio = Math.max(0, 1.0 - lockedSum);
+            
+            // 調整可能商品への比例配分
+            const adjustableSum = adjustableProducts.reduce((sum, p) => sum + (ratios[p.code] || 0), 0);
+            
+            if (adjustableSum > 0) {
+                adjustableProducts.forEach(product => {
+                    ratios[product.code] = (ratios[product.code] / adjustableSum) * remainingRatio;
+                });
+            } else {
+                // 均等配分
+                const equalRatio = remainingRatio / adjustableProducts.length;
+                adjustableProducts.forEach(product => {
+                    ratios[product.code] = equalRatio;
+                });
+            }
+        }
+        
+        // ロック済み商品取得
+        function getLockedProducts(date) {
+            const key = `locked_products_${date}`;
+            const stored = localStorage.getItem(key);
+            return stored ? JSON.parse(stored) : [];
+        }
+        
+        // 金額差分吸収
+        function absorbAmountDifference(dayResults, amountDiff, date) {
+            const lockedProducts = getLockedProducts(date);
+            const adjustableProducts = masterProducts.filter(p => 
+                !lockedProducts.includes(p.code) && dayResults[p.code]
+            );
+            
+            if (adjustableProducts.length === 0) return;
+            
+            // 在庫回転率や販売速度による重み付け（簡略版）
+            const weights = {};
+            let totalWeight = 0;
+            
+            adjustableProducts.forEach(product => {
+                const weight = 1.0 / product.lot; // ロット数の逆数を重みとする
+                weights[product.code] = weight;
+                totalWeight += weight;
+            });
+            
+            // 差分を重み付けで配分
+            adjustableProducts.forEach(product => {
+                const result = dayResults[product.code];
+                const weightRatio = weights[product.code] / totalWeight;
+                const lotAdjustment = Math.round((amountDiff * weightRatio) / product.price / product.lot) * product.lot;
+                
+                const newQty = Math.max(0, result.qty - lotAdjustment);
+                const newAmount = newQty * product.price;
+                
+                dayResults[product.code].qty = newQty;
+                dayResults[product.code].amount = newAmount;
+                
+                updateProductDisplay(product.code, date, newQty, newAmount);
+            });
+        }
+        
+        // 商品表示更新
+        function updateProductDisplay(productCode, date, qty, amount) {
+            const qtyElement = document.getElementById(`qty-${productCode}-${date}`);
+            if (qtyElement) {
+                qtyElement.textContent = qty;
+                qtyElement.setAttribute('data-amount', amount);
+            }
+        }
+        
+        // 全日計算
+        function calculateAllDays() {
+            const datePairs = generateDatePairs();
+            datePairs.forEach(pair => {
+                calculateDayQuantities(pair.current);
+                updateDayTotal(pair.current);
+            });
+            calculateSummary();
+        }
+        
+        // 日別合計更新
+        function updateDayTotal(date) {
+            let dayTotal = 0;
+            
+            masterProducts.forEach(product => {
+                const qtyElement = document.getElementById(`qty-${product.code}-${date}`);
+                if (qtyElement) {
+                    const qty = parseInt(qtyElement.textContent) || 0;
+                    dayTotal += qty * product.price;
+                }
+            });
+            
+            const totalElement = document.getElementById(`total-${date}`);
+            if (totalElement) {
+                totalElement.textContent = `¥${dayTotal.toLocaleString()}`;
+            }
+            
+            // 前年合計も更新
+            const prevDate = getPrevYearSameWeekday(date);
+            let prevDayTotal = 0;
+            
+            masterProducts.forEach(product => {
+                const prevData = getPrevYearData(product.code, date);
+                prevDayTotal += prevData.sales;
+            });
+            
+            const prevTotalElement = document.getElementById(`prev-total-${prevDate}`);
+            if (prevTotalElement) {
+                prevTotalElement.textContent = `¥${prevDayTotal.toLocaleString()}`;
+            }
+        }
+        
+        // サマリー計算
+        function calculateSummary() {
+            let totalBudget = 0;
+            let prevYearTotal = 0;
+            
+            const datePairs = generateDatePairs();
+            datePairs.forEach(pair => {
+                // 当年合計
+                const totalElement = document.getElementById(`total-${pair.current}`);
+                if (totalElement) {
+                    const amount = parseInt(totalElement.textContent.replace(/[¥,]/g, '')) || 0;
+                    totalBudget += amount;
+                }
+                
+                // 前年合計を正確に計算
+                masterProducts.forEach(product => {
+                    const prevData = getPrevYearData(product.code, pair.current);
+                    prevYearTotal += prevData.sales;
+                });
+            });
+            
+            document.getElementById('totalBudget').textContent = `¥${totalBudget.toLocaleString()}`;
+            document.getElementById('prevYearTotal').textContent = `¥${prevYearTotal.toLocaleString()}`;
+        }
+        
+        // 構成比モーダル開く
+        function openCompositionModal(date) {
+            const drawer = document.getElementById('editDrawer');
+            const title = document.getElementById('drawerTitle');
+            const content = document.getElementById('drawerContent');
+            
+            title.textContent = `${date} 構成比編集`;
+            
+            let html = '<div class="composition-editor">';
+            html += '<div class="composition-summary">';
+            html += '<h4>構成比編集</h4>';
+            html += '<div class="composition-status" id="compositionStatus">合計: 100.0%</div>';
+            html += '</div>';
+            
+            const prevDate = getPrevYearSameWeekday(date);
+            const budgetPct = dailyBudgets[date] || 100;
+            
+            // 前年データ取得
+            let prevTotalSales = 0;
+            const prevDataMap = {};
+            
+            masterProducts.forEach(product => {
+                const prevData = getPrevYearData(product.code, date);
+                prevDataMap[product.code] = prevData;
+                prevTotalSales += prevData.qty * prevData.price;
+            });
+            
+            // カテゴリ別表示
+            const categories = ['デンマーク関連', '洋菓子限定', 'ゼリー', 'その他'];
+            
+            categories.forEach(category => {
+                const categoryProducts = masterProducts.filter(p => p.category === category);
+                if (categoryProducts.length === 0) return;
+                
+                html += `<div class="category-section">`;
+                html += `<h5>${category}</h5>`;
+                
+                categoryProducts.forEach(product => {
+                    const prevData = prevDataMap[product.code];
+                    const prevRatio = prevTotalSales > 0 ? (prevData.qty * prevData.price) / prevTotalSales : 0;
+                    const currentRatio = getStoreRatio(date, product.code) || prevRatio;
+                    
+                    html += `<div class="composition-row">`;
+                    html += `<div class="composition-product">`;
+                    html += `<div class="product-name">${product.name}</div>`;
+                    html += `<div class="product-info">単価: ¥${product.price.toLocaleString()}, ロット: ${product.lot}</div>`;
+                    html += `</div>`;
+                    html += `<div class="composition-controls">`;
+                    html += `<input type="number" class="ratio-input" id="ratio-${product.code}" `;
+                    html += `value="${(currentRatio * 100).toFixed(1)}" step="0.1" min="0" max="50" `;
+                    html += `onchange="updateCompositionRatio('${date}', '${product.code}', this.value)">`;
+                    html += `<span class="ratio-unit">%</span>`;
+                    html += `<div class="ratio-details">`;
+                    html += `<div class="prev-ratio">前年: ${(prevRatio * 100).toFixed(1)}%</div>`;
+                    html += `</div>`;
+                    html += `</div>`;
+                    html += `</div>`;
+                });
+                
+                html += `</div>`;
+            });
+            
+            html += '<div class="composition-actions">';
+            html += `<button class="btn btn-secondary" onclick="resetToHQRatios('${date}')">HQ基準に戻す</button>`;
+            html += `<button class="btn btn-secondary" onclick="resetToPrevRatios('${date}')">前年構成に戻す</button>`;
+            html += '</div>';
+            html += '</div>';
+            
+            content.innerHTML = html;
+            editingData = { type: 'composition', date: date };
+            drawer.classList.add('open');
+            
+            // 初期構成比チェック
+            updateCompositionStatus(date);
+        }
+        
+        // 構成比更新
+        function updateCompositionRatio(date, productCode, ratioValue) {
+            const ratio = parseFloat(ratioValue) / 100;
+            
+            // ローカルストレージに保存
+            const key = `store_ratio_${date}_${productCode}`;
+            if (ratio > 0) {
+                localStorage.setItem(key, ratio.toString());
+            } else {
+                localStorage.removeItem(key);
+            }
+            
+            // 構成比合計チェック
+            updateCompositionStatus(date);
+        }
+        
+        // 構成比状態更新
+        function updateCompositionStatus(date) {
+            let totalRatio = 0;
+            
+            masterProducts.forEach(product => {
+                const inputElement = document.getElementById(`ratio-${product.code}`);
+                if (inputElement) {
+                    totalRatio += parseFloat(inputElement.value) || 0;
+                }
+            });
+            
+            const statusElement = document.getElementById('compositionStatus');
+            if (statusElement) {
+                const diff = Math.abs(totalRatio - 100);
+                statusElement.textContent = `合計: ${totalRatio.toFixed(1)}%`;
+                
+                if (diff <= 0.5) {
+                    statusElement.className = 'composition-status valid';
+                } else if (diff <= 2.0) {
+                    statusElement.className = 'composition-status warning';
+                } else {
+                    statusElement.className = 'composition-status error';
+                }
+            }
+        }
+        
+        // HQ基準に戻す
+        function resetToHQRatios(date) {
+            masterProducts.forEach(product => {
+                const hqRatio = getHQRatio(product.code);
+                const inputElement = document.getElementById(`ratio-${product.code}`);
+                if (inputElement) {
+                    inputElement.value = (hqRatio * 100).toFixed(1);
+                    updateCompositionRatio(date, product.code, inputElement.value);
+                }
+            });
+            updateCompositionStatus(date);
+        }
+        
+        // 前年構成に戻す
+        function resetToPrevRatios(date) {
+            const prevDate = getPrevYearSameWeekday(date);
+            let prevTotalSales = 0;
+            const prevDataMap = {};
+            
+            masterProducts.forEach(product => {
+                const prevData = getPrevYearData(product.code, date);
+                prevDataMap[product.code] = prevData;
+                prevTotalSales += prevData.qty * prevData.price;
+            });
+            
+            masterProducts.forEach(product => {
+                const prevData = prevDataMap[product.code];
+                const prevRatio = prevTotalSales > 0 ? (prevData.qty * prevData.price) / prevTotalSales : 0;
+                const inputElement = document.getElementById(`ratio-${product.code}`);
+                if (inputElement) {
+                    inputElement.value = (prevRatio * 100).toFixed(1);
+                    updateCompositionRatio(date, product.code, inputElement.value);
+                }
+            });
+            updateCompositionStatus(date);
+        }
+        
+        // SKU詳細ドロワー開く
+        function openProductDrawer(productCode, date) {
+            const product = masterProducts.find(p => p.code === productCode);
+            if (!product) return;
+            
+            const drawer = document.getElementById('editDrawer');
+            const title = document.getElementById('drawerTitle');
+            const content = document.getElementById('drawerContent');
+            
+            title.textContent = `${product.name} - ${date} 詳細`;
+            
+            const prevDate = getPrevYearSameWeekday(date);
+            const prevData = getPrevYearData(productCode, date);
+            const currentRatio = getStoreRatio(date, productCode);
+            
+            // 前年データ
+            let prevTotalSales = 0;
+            masterProducts.forEach(p => {
+                const pd = getPrevYearData(p.code, date);
+                prevTotalSales += pd.qty * pd.price;
+            });
+            
+            const prevRatio = prevTotalSales > 0 ? (prevData.qty * prevData.price) / prevTotalSales : 0;
+            const effectiveRatio = currentRatio || prevRatio;
+            
+            const budgetPct = dailyBudgets[date] || 100;
+            const targetSales = prevTotalSales * (budgetPct / 100);
+            const allocatedSales = targetSales * effectiveRatio;
+            const rawQty = allocatedSales / product.price;
+            const roundedQty = roundByLot(rawQty, product.lot, 'ceil');
+            const actualAmount = roundedQty * product.price;
+            
+            let html = '<div class="product-details">';
+            
+            // 商品基本情報
+            html += '<div class="detail-section">';
+            html += '<h4>商品情報</h4>';
+            html += `<div class="detail-row"><label>商品コード:</label><span>${product.code}</span></div>`;
+            html += `<div class="detail-row"><label>商品名:</label><span>${product.name}</span></div>`;
+            html += `<div class="detail-row"><label>カテゴリ:</label><span>${product.category}</span></div>`;
+            html += `<div class="detail-row"><label>現行単価:</label><span>¥${product.price.toLocaleString()}</span></div>`;
+            html += `<div class="detail-row"><label>ロット:</label><span>${product.lot}個</span></div>`;
+            html += '</div>';
+            
+            // 前年実績
+            html += '<div class="detail-section">';
+            html += '<h4>前年実績 (' + prevDate + ')</h4>';
+            html += `<div class="detail-row"><label>販売数量:</label><span>${prevData.qty}個</span></div>`;
+            html += `<div class="detail-row"><label>売上金額:</label><span>¥${(prevData.qty * prevData.price).toLocaleString()}</span></div>`;
+            html += `<div class="detail-row"><label>構成比:</label><span>${(prevRatio * 100).toFixed(1)}%</span></div>`;
+            html += '</div>';
+            
+            // 当日計算結果
+            html += '<div class="detail-section">';
+            html += '<h4>当日計算結果</h4>';
+            html += `<div class="detail-row"><label>予算％:</label><span>${budgetPct}%</span></div>`;
+            html += `<div class="detail-row"><label>有効構成比:</label><span>${(effectiveRatio * 100).toFixed(1)}%</span></div>`;
+            html += `<div class="detail-row"><label>割付売上:</label><span>¥${Math.round(allocatedSales).toLocaleString()}</span></div>`;
+            html += `<div class="detail-row"><label>丸め前数量:</label><span>${rawQty.toFixed(2)}個</span></div>`;
+            html += `<div class="detail-row"><label>計画数量:</label><span>${roundedQty}個</span></div>`;
+            html += `<div class="detail-row"><label>計画金額:</label><span>¥${actualAmount.toLocaleString()}</span></div>`;
+            html += '</div>';
+            
+            // 構成比編集
+            html += '<div class="detail-section">';
+            html += '<h4>構成比調整</h4>';
+            html += '<div class="composition-edit">';
+            html += `<label for="productRatio">構成比 (%):</label>`;
+            html += `<input type="number" id="productRatio" value="${(effectiveRatio * 100).toFixed(1)}" `;
+            html += `step="0.1" min="0" max="50" onchange="updateProductRatio('${date}', '${productCode}', this.value)">`;
+            html += '<div class="ratio-actions">';
+            html += `<button class="btn btn-secondary" onclick="lockProduct('${date}', '${productCode}')">固定</button>`;
+            html += `<button class="btn btn-secondary" onclick="unlockProduct('${date}', '${productCode}')">固定解除</button>`;
+            html += '</div>';
+            html += '</div>';
+            html += '</div>';
+            
+            html += '</div>';
+            
+            content.innerHTML = html;
+            editingData = { type: 'product', date: date, productCode: productCode };
+            drawer.classList.add('open');
+        }
+        
+        // 個別商品構成比更新
+        function updateProductRatio(date, productCode, ratioValue) {
+            updateCompositionRatio(date, productCode, ratioValue);
+            // 再計算実行
+            calculateDayQuantities(date);
+            updateDayTotal(date);
+            calculateSummary();
+        }
+        
+        // 商品固定
+        function lockProduct(date, productCode) {
+            const lockedProducts = getLockedProducts(date);
+            if (!lockedProducts.includes(productCode)) {
+                lockedProducts.push(productCode);
+                const key = `locked_products_${date}`;
+                localStorage.setItem(key, JSON.stringify(lockedProducts));
+            }
+        }
+        
+        // 商品固定解除
+        function unlockProduct(date, productCode) {
+            const lockedProducts = getLockedProducts(date);
+            const index = lockedProducts.indexOf(productCode);
+            if (index > -1) {
+                lockedProducts.splice(index, 1);
+                const key = `locked_products_${date}`;
+                localStorage.setItem(key, JSON.stringify(lockedProducts));
+            }
+        }
+        
+        // ドロワー閉じる
+        function closeDrawer() {
+            document.getElementById('editDrawer').classList.remove('open');
+        }
+        
+        // バリデーション・アラート表示
+        function showValidationWarnings() {
+            const warnings = [];
+            const datePairs = generateDatePairs();
+            
+            // 構成比合計チェック
+            datePairs.forEach(pair => {
+                let totalRatio = 0;
+                masterProducts.forEach(product => {
+                    const storeRatio = getStoreRatio(pair.current, product.code);
+                    const prevData = getPrevYearData(product.code, pair.current);
+                    let prevTotalSales = 0;
+                    
+                    masterProducts.forEach(p => {
+                        const pd = getPrevYearData(p.code, pair.current);
+                        prevTotalSales += pd.qty * pd.price;
+                    });
+                    
+                    const prevRatio = prevTotalSales > 0 ? (prevData.qty * prevData.price) / prevTotalSales : 0;
+                    const effectiveRatio = storeRatio !== null ? storeRatio : prevRatio;
+                    totalRatio += effectiveRatio;
+                });
+                
+                const diff = Math.abs(totalRatio - 1.0);
+                if (diff > 0.005) { // ±0.5%を超える
+                    warnings.push(`${pair.current}: 構成比合計が${(totalRatio * 100).toFixed(1)}%です`);
+                }
+            });
+            
+            // 締切超過チェック
+            const deadlineDate = new Date();
+            deadlineDate.setDate(deadlineDate.getDate() + 2); // 出荷2日前
+            
+            datePairs.forEach(pair => {
+                const orderDate = new Date(pair.current);
+                if (orderDate <= deadlineDate) {
+                    warnings.push(`${pair.current}: 締切超過のため編集できません`);
+                }
+            });
+            
+            // 発注不可商品チェック
+            const blockedProducts = ['2419']; // サンプル：完熟マンゴープリンが発注不可
+            blockedProducts.forEach(code => {
+                const product = masterProducts.find(p => p.code === code);
+                if (product) {
+                    warnings.push(`${product.name}: 発注停止中です`);
+                }
+            });
+            
+            // 警告表示
+            displayWarnings(warnings);
+        }
+        
+        // 警告表示
+        function displayWarnings(warnings) {
+            const existingWarnings = document.getElementById('validationWarnings');
+            if (existingWarnings) {
+                existingWarnings.remove();
+            }
+            
+            if (warnings.length === 0) return;
+            
+            const warningDiv = document.createElement('div');
+            warningDiv.id = 'validationWarnings';
+            warningDiv.className = 'table-warnings';
+            
+            let html = '<div style="font-weight: bold; margin-bottom: 0.5rem;">⚠️ 警告・エラー</div>';
+            warnings.forEach(warning => {
+                html += `<div class="warning-item"><span class="warning-icon">⚠</span>${warning}</div>`;
+            });
+            
+            warningDiv.innerHTML = html;
+            
+            const tableContainer = document.querySelector('.table-container');
+            tableContainer.insertBefore(warningDiv, tableContainer.firstChild);
+        }
+        
+        // セルバリデーション表示
+        function applyCellValidation() {
+            const datePairs = generateDatePairs();
+            const deadlineDate = new Date();
+            deadlineDate.setDate(deadlineDate.getDate() + 2);
+            
+            datePairs.forEach(pair => {
+                const orderDate = new Date(pair.current);
+                const isDeadlinePassed = orderDate <= deadlineDate;
+                
+                masterProducts.forEach(product => {
+                    const qtyElement = document.getElementById(`qty-${product.code}-${pair.current}`);
+                    if (!qtyElement) return;
+                    
+                    const parentCell = qtyElement.closest('td');
+                    
+                    // 締切超過のセル
+                    if (isDeadlinePassed) {
+                        parentCell.classList.add('locked-cell');
+                        qtyElement.style.pointerEvents = 'none';
+                        qtyElement.setAttribute('title', '締切超過のため編集できません');
+                    }
+                    
+                    // 発注停止中の商品
+                    const blockedProducts = ['2419'];
+                    if (blockedProducts.includes(product.code)) {
+                        parentCell.classList.add('error-cell');
+                        qtyElement.setAttribute('title', '発注停止中');
+                    }
+                    
+                    // 構成比警告
+                    const storeRatio = getStoreRatio(pair.current, product.code);
+                    if (storeRatio && (storeRatio < 0.005 || storeRatio > 0.5)) {
+                        parentCell.classList.add('warning-cell');
+                        qtyElement.setAttribute('title', '構成比が適正範囲を超えています');
+                    }
+                });
+            });
+        }
+        
+        // ドロワー変更保存
+        function saveDrawerChanges() {
+            if (editingData.type === 'composition') {
+                // 構成比の変更を全て保存（既にupdateCompositionRatioで保存済み）
+                // 再計算実行
+                calculateDayQuantities(editingData.date);
+                updateDayTotal(editingData.date);
+                calculateSummary();
+                
+                // バリデーション更新
+                showValidationWarnings();
+                applyCellValidation();
+                
+            } else if (editingData.type === 'product') {
+                // 個別商品の変更を保存
+                const ratioInput = document.getElementById('productRatio');
+                if (ratioInput) {
+                    updateProductRatio(editingData.date, editingData.productCode, ratioInput.value);
+                }
+                
+                // バリデーション更新
+                showValidationWarnings();
+                applyCellValidation();
+            }
+            
+            closeDrawer();
+        }
+        
+        // メインページからのリンク追加
+        function addToMainPage() {
+            // index.htmlにリンクを追加する想定
+            console.log('月間修正シートページが完成しました');
+            console.log('URL: monthly-adjustment.html');
+        }
+        
+        // 月間一括予算設定
+        function applyMonthlyBudget() {
+            const budgetPct = parseFloat(document.getElementById('monthlyBudgetPct').value) || 100;
+            
+            if (budgetPct < 50 || budgetPct > 150) {
+                alert('予算%は50%から150%の範囲で設定してください');
+                return;
+            }
+            
+            const datePairs = generateDatePairs();
+            let updatedCount = 0;
+            
+            datePairs.forEach(pair => {
+                const budgetInput = document.querySelector(`input[onchange*="${pair.current}"]`);
+                if (budgetInput) {
+                    budgetInput.value = budgetPct;
+                    dailyBudgets[pair.current] = budgetPct;
+                    updatedCount++;
+                }
+            });
+            
+            // 全体再計算
+            calculateAllDays();
+            
+            alert(`${updatedCount}日分の予算を${budgetPct}%に設定しました`);
+        }
+        
+        // HQ基準に全日リセット
+        function resetToHQStandard() {
+            if (!confirm('全ての日付の構成比をHQ基準にリセットしますか？')) {
+                return;
+            }
+            
+            const datePairs = generateDatePairs();
+            let clearedCount = 0;
+            
+            datePairs.forEach(pair => {
+                masterProducts.forEach(product => {
+                    const key = `store_ratio_${pair.current}_${product.code}`;
+                    localStorage.removeItem(key);
+                    clearedCount++;
+                });
+                
+                // 予算も100%にリセット
+                const budgetInput = document.querySelector(`input[onchange*="${pair.current}"]`);
+                if (budgetInput) {
+                    budgetInput.value = 100;
+                    dailyBudgets[pair.current] = 100;
+                }
+            });
+            
+            // 全体再計算
+            calculateAllDays();
+            
+            alert(`${clearedCount}件の構成比設定をクリアし、HQ基準に戻しました`);
+        }
+        
+        // 前年構成比を全日にコピー
+        function copyFromPreviousYear() {
+            if (!confirm('全ての日付の構成比を前年実績ベースに設定しますか？')) {
+                return;
+            }
+            
+            const datePairs = generateDatePairs();
+            let copiedCount = 0;
+            
+            datePairs.forEach(pair => {
+                // 前年データ取得と構成比計算
+                let prevTotalSales = 0;
+                const prevDataMap = {};
+                
+                masterProducts.forEach(product => {
+                    const prevData = getPrevYearData(product.code, pair.current);
+                    prevDataMap[product.code] = prevData;
+                    prevTotalSales += prevData.sales;
+                });
+                
+                // 各商品の前年構成比を設定
+                if (prevTotalSales > 0) {
+                    masterProducts.forEach(product => {
+                        const prevData = prevDataMap[product.code];
+                        const prevRatio = prevData.sales / prevTotalSales;
+                        
+                        if (prevRatio > 0) {
+                            const key = `store_ratio_${pair.current}_${product.code}`;
+                            localStorage.setItem(key, prevRatio.toString());
+                            copiedCount++;
+                        }
+                    });
+                }
+            });
+            
+            // 全体再計算
+            calculateAllDays();
+            
+            alert(`${copiedCount}件の構成比を前年実績から設定しました`);
+        }
+        
+        // データ同期
+        function syncData() {
+            alert('データ同期機能（実装予定）');
+        }
+        
+        // 一括構成比編集モーダル関連の変数
+        let bulkCompositionData = {};
+        
+        // 一括構成比編集モーダルを開く
+        function openBulkCompositionModal() {
+            const modal = document.getElementById('bulkCompositionModal');
+            initializeBulkCompositionData();
+            generateBulkCompositionGrid();
+            updateBulkTotalRatio();
+            updateBulkRatioPreview();
+            modal.classList.add('show');
+        }
+        
+        // 一括構成比編集モーダルを閉じる
+        function closeBulkCompositionModal() {
+            const modal = document.getElementById('bulkCompositionModal');
+            modal.classList.remove('show');
+        }
+        
+        // 一括構成比データ初期化
+        function initializeBulkCompositionData() {
+            bulkCompositionData = {};
+            
+            masterProducts.forEach(product => {
+                // 現在設定されている構成比を取得（期間内の最初の日を参考）
+                const sampleDate = currentPeriod.start;
+                const storeRatio = getStoreRatio(sampleDate, product.code);
+                
+                if (storeRatio !== null) {
+                    bulkCompositionData[product.code] = storeRatio * 100;
+                } else {
+                    // 前年構成比を取得
+                    const prevData = getPrevYearData(product.code, sampleDate);
+                    let prevTotalSales = 0;
+                    masterProducts.forEach(p => {
+                        const pd = getPrevYearData(p.code, sampleDate);
+                        prevTotalSales += pd.sales;
+                    });
+                    
+                    if (prevTotalSales > 0) {
+                        const prevRatio = prevData.sales / prevTotalSales;
+                        bulkCompositionData[product.code] = prevRatio * 100;
+                    } else {
+                        // HQ基準を使用
+                        const hqRatio = getHQRatio(product.code);
+                        bulkCompositionData[product.code] = hqRatio * 100;
+                    }
+                }
+            });
+        }
+        
+        // 一括構成比グリッド生成
+        function generateBulkCompositionGrid() {
+            const grid = document.getElementById('bulkCompositionGrid');
+            grid.innerHTML = '';
+            
+            // カテゴリ別にグループ化
+            const categories = ['デンマーク関連', '洋菓子限定', 'ゼリー', 'その他'];
+            
+            categories.forEach(category => {
+                const categoryProducts = masterProducts.filter(p => p.category === category);
+                if (categoryProducts.length === 0) return;
+                
+                categoryProducts.forEach(product => {
+                    const card = document.createElement('div');
+                    card.className = 'bulk-product-card';
+                    
+                    const currentRatio = bulkCompositionData[product.code] || 0;
+                    const hqRatio = getHQRatio(product.code) * 100;
+                    
+                    card.innerHTML = `
+                        <div class="bulk-product-header">
+                            <div>
+                                <div class="bulk-product-name">${product.name}</div>
+                                <div class="bulk-product-info">${product.category} | ¥${product.price.toLocaleString()}</div>
+                            </div>
+                        </div>
+                        <div class="bulk-ratio-input-group">
+                            <input type="number" class="bulk-ratio-input" id="bulk-ratio-${product.code}" 
+                                   value="${currentRatio.toFixed(1)}" step="0.1" min="0" max="50"
+                                   onchange="updateBulkRatio('${product.code}', this.value)">
+                            <span class="bulk-ratio-unit">%</span>
+                        </div>
+                        <div class="bulk-current-ratio">
+                            HQ基準: ${hqRatio.toFixed(1)}%
+                        </div>
+                    `;
+                    
+                    grid.appendChild(card);
+                });
+            });
+        }
+        
+        // 個別商品の一括構成比更新
+        function updateBulkRatio(productCode, ratioValue) {
+            const ratio = parseFloat(ratioValue) || 0;
+            bulkCompositionData[productCode] = ratio;
+            updateBulkTotalRatio();
+        }
+        
+        // 一括構成比合計更新
+        function updateBulkTotalRatio() {
+            let totalRatio = 0;
+            Object.values(bulkCompositionData).forEach(ratio => {
+                totalRatio += ratio || 0;
+            });
+            
+            const totalElement = document.getElementById('bulkTotalRatio');
+            if (totalElement) {
+                totalElement.textContent = `${totalRatio.toFixed(1)}%`;
+                
+                const diff = Math.abs(totalRatio - 100);
+                if (diff <= 0.5) {
+                    totalElement.className = 'bulk-total-value valid';
+                } else if (diff <= 2.0) {
+                    totalElement.className = 'bulk-total-value warning';
+                } else {
+                    totalElement.className = 'bulk-total-value error';
+                }
+            }
+        }
+        
+        // HQ基準構成比を設定
+        function setBulkHQRatios() {
+            masterProducts.forEach(product => {
+                const hqRatio = getHQRatio(product.code) * 100;
+                bulkCompositionData[product.code] = hqRatio;
+                
+                const inputElement = document.getElementById(`bulk-ratio-${product.code}`);
+                if (inputElement) {
+                    inputElement.value = hqRatio.toFixed(1);
+                }
+            });
+            updateBulkTotalRatio();
+        }
+        
+        // 前年構成比を設定
+        function setBulkPrevYearRatios() {
+            const sampleDate = currentPeriod.start;
+            let prevTotalSales = 0;
+            const prevDataMap = {};
+            
+            // 前年データ収集
+            masterProducts.forEach(product => {
+                const prevData = getPrevYearData(product.code, sampleDate);
+                prevDataMap[product.code] = prevData;
+                prevTotalSales += prevData.sales;
+            });
+            
+            if (prevTotalSales > 0) {
+                masterProducts.forEach(product => {
+                    const prevData = prevDataMap[product.code];
+                    const prevRatio = (prevData.sales / prevTotalSales) * 100;
+                    bulkCompositionData[product.code] = prevRatio;
+                    
+                    const inputElement = document.getElementById(`bulk-ratio-${product.code}`);
+                    if (inputElement) {
+                        inputElement.value = prevRatio.toFixed(1);
+                    }
+                });
+                updateBulkTotalRatio();
+            } else {
+                alert('前年データが不足しているため、HQ基準を使用します');
+                setBulkHQRatios();
+            }
+        }
+        
+        // 均等配分構成比を設定
+        function setBulkEqualRatios() {
+            const equalRatio = 100 / masterProducts.length;
+            
+            masterProducts.forEach(product => {
+                bulkCompositionData[product.code] = equalRatio;
+                
+                const inputElement = document.getElementById(`bulk-ratio-${product.code}`);
+                if (inputElement) {
+                    inputElement.value = equalRatio.toFixed(1);
+                }
+            });
+            updateBulkTotalRatio();
+        }
+        
+        // 一括構成比を全期間に適用
+        function applyBulkCompositionRatios() {
+            // 構成比合計チェック
+            let totalRatio = 0;
+            Object.values(bulkCompositionData).forEach(ratio => {
+                totalRatio += ratio || 0;
+            });
+            
+            const diff = Math.abs(totalRatio - 100);
+            if (diff > 5.0) {
+                if (!confirm(`構成比合計が${totalRatio.toFixed(1)}%です。このまま適用しますか？`)) {
+                    return;
+                }
+            }
+            
+            // 期間内の全日付に適用
+            const datePairs = generateDatePairs();
+            let appliedCount = 0;
+            
+            datePairs.forEach(pair => {
+                masterProducts.forEach(product => {
+                    const ratio = bulkCompositionData[product.code] / 100;
+                    
+                    if (ratio > 0) {
+                        const key = `store_ratio_${pair.current}_${product.code}`;
+                        localStorage.setItem(key, ratio.toString());
+                        appliedCount++;
+                    }
+                });
+            });
+            
+            // 全体再計算
+            calculateAllDays();
+            updateBulkRatioPreview();
+            
+            alert(`${appliedCount}件の構成比設定を全期間に適用しました`);
+            closeBulkCompositionModal();
+        }
+        
+        // 構成比プレビュー更新
+        function updateBulkRatioPreview() {
+            const previewElement = document.getElementById('bulkRatioPreview');
+            if (!previewElement) return;
+            
+            let html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.5rem;">';
+            
+            masterProducts.forEach(product => {
+                const sampleDate = currentPeriod.start;
+                const storeRatio = getStoreRatio(sampleDate, product.code);
+                const currentRatio = storeRatio ? (storeRatio * 100).toFixed(1) : '-';
+                
+                html += `
+                    <div style="background: #f8f9fa; padding: 0.5rem; border-radius: 4px; text-align: center;">
+                        <div style="font-weight: 600; font-size: 0.8rem; margin-bottom: 0.2rem;">${product.name}</div>
+                        <div style="color: #2196F3; font-weight: 500;">${currentRatio}%</div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            previewElement.innerHTML = html;
+        }
+        
+        // 初期計算実行
+        setTimeout(() => {
+            calculateAllDays();
+            showValidationWarnings();
+            applyCellValidation();
+            updateBulkRatioPreview();
+        }, 100);
+    </script>
+</body>
+</html>

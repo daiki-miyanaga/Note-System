@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>洋生ノート管理システム - スタンドアロン版</title>
+    
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧁</text></svg>">
+    
+    <style>
+        /* CSS Reset & Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* Color Palette */
+            --primary: #3498db;
+            --primary-dark: #2980b9;
+            --secondary: #2ecc71;
+            --secondary-dark: #27ae60;
+            --warning: #f39c12;
+            --warning-dark: #e67e22;
+            --error: #e74c3c;
+            --error-dark: #c0392b;
+            --info: #9b59b6;
+            
+            /* Neutral Colors */
+            --white: #ffffff;
+            --gray-50: #f8f9fa;
+            --gray-100: #e9ecef;
+            --gray-200: #dee2e6;
+            --gray-300: #ced4da;
+            --gray-400: #adb5bd;
+            --gray-500: #6c757d;
+            --gray-600: #495057;
+            --gray-700: #343a40;
+            --gray-800: #212529;
+            --black: #000000;
+            
+            /* Background */
+            --bg-primary: var(--white);
+            --bg-secondary: var(--gray-50);
+            --bg-dark: var(--gray-800);
+            
+            /* Text */
+            --text-primary: var(--gray-800);
+            --text-secondary: var(--gray-600);
+            --text-muted: var(--gray-500);
+            --text-white: var(--white);
+            
+            /* Border */
+            --border-color: var(--gray-200);
+            --border-radius: 8px;
+            --border-radius-sm: 4px;
+            --border-radius-lg: 12px;
+            
+            /* Spacing */
+            --spacing-xs: 0.25rem;
+            --spacing-sm: 0.5rem;
+            --spacing-md: 1rem;
+            --spacing-lg: 1.5rem;
+            --spacing-xl: 2rem;
+            --spacing-2xl: 3rem;
+            
+            /* Typography */
+            --font-size-xs: 0.75rem;
+            --font-size-sm: 0.875rem;
+            --font-size-base: 1rem;
+            --font-size-lg: 1.125rem;
+            --font-size-xl: 1.25rem;
+            --font-size-2xl: 1.5rem;
+            --font-size-3xl: 2rem;
+            
+            --font-weight-normal: 400;
+            --font-weight-medium: 500;
+            --font-weight-semibold: 600;
+            --font-weight-bold: 700;
+            
+            /* Shadows */
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            
+            /* Z-index */
+            --z-dropdown: 1000;
+            --z-sticky: 1020;
+            --z-fixed: 1030;
+            --z-modal: 1040;
+            --z-tooltip: 1070;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background-color: var(--bg-secondary);
+            font-size: var(--font-size-base);
+        }
+
+        .container {
+            max-width: 100%;
+            padding: 0 var(--spacing-md);
+            margin: 0 auto;
+        }
+
+        /* Header Styles */
+        .header {
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border-color);
+            padding: var(--spacing-lg) 0;
+            margin-bottom: var(--spacing-xl);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: var(--spacing-md);
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .header-title h1 {
+            font-size: var(--font-size-2xl);
+            font-weight: var(--font-weight-bold);
+            color: var(--text-primary);
+        }
+
+        .header-info {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-lg);
+            flex-wrap: wrap;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-xs);
+        }
+
+        .info-item label {
+            font-size: var(--font-size-xs);
+            font-weight: var(--font-weight-medium);
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .info-item input,
+        .info-item select {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-sm);
+            font-size: var(--font-size-sm);
+            background: var(--bg-primary);
+        }
+
+        .info-item input:focus,
+        .info-item select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
+        }
+
+        .info-item input[readonly] {
+            background: var(--gray-50);
+            color: var(--text-muted);
+        }
+
+        /* Main Content */
+        .main-content {
+            padding-bottom: var(--spacing-2xl);
+        }
+
+        /* Summary Cards */
+        .summary-section {
+            background: var(--bg-primary);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-xl);
+            margin-bottom: var(--spacing-xl);
+            box-shadow: var(--shadow-md);
+        }
+
+        .section-title {
+            font-size: var(--font-size-xl);
+            font-weight: var(--font-weight-semibold);
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-lg);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--spacing-lg);
+        }
+
+        .summary-card {
+            background: var(--bg-secondary);
+            padding: var(--spacing-lg);
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .summary-card .icon {
+            font-size: var(--font-size-2xl);
+            margin-bottom: var(--spacing-sm);
+            display: block;
+        }
+
+        .summary-card .label {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+            font-weight: var(--font-weight-medium);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .summary-card .value {
+            font-size: var(--font-size-xl);
+            font-weight: var(--font-weight-bold);
+            color: var(--text-primary);
+        }
+
+        /* Table Section */
+        .table-section {
+            background: var(--bg-primary);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+        }
+
+        .table-header {
+            padding: var(--spacing-xl);
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+        }
+
+        .table-controls {
+            display: flex;
+            gap: var(--spacing-md);
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: var(--spacing-md);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            padding: var(--spacing-sm) var(--spacing-md);
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-medium);
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            min-height: 40px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: var(--text-white);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-secondary {
+            background: var(--gray-100);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-200);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow);
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: var(--text-white);
+        }
+
+        .btn-warning:hover {
+            background: var(--warning-dark);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        /* Table Styles */
+        .table-container {
+            overflow-x: auto;
+            min-height: 400px;
+        }
+
+        .western-table {
+            width: 100%;
+            min-width: 1600px; /* 15列対応 */
+            border-collapse: collapse;
+            font-size: var(--font-size-sm);
+        }
+
+        .western-table th,
+        .western-table td {
+            padding: var(--spacing-sm);
+            border: 1px solid var(--border-color);
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .western-table th {
+            background: var(--gray-100);
+            font-weight: var(--font-weight-semibold);
+            font-size: var(--font-size-xs);
+            color: var(--text-primary);
+            position: sticky;
+            top: 0;
+            z-index: var(--z-sticky);
+        }
+
+        .western-table tbody tr:nth-child(even) {
+            background: var(--gray-50);
+        }
+
+        .western-table tbody tr:hover {
+            background: rgba(52, 152, 219, 0.05);
+        }
+
+        /* Category Headers */
+        .category-header {
+            background: #e8f5e8 !important;
+            font-weight: var(--font-weight-bold);
+            color: var(--secondary-dark);
+            text-align: left;
+            font-size: var(--font-size-sm);
+        }
+
+        /* Input Styles */
+        .table-input {
+            width: 100%;
+            padding: var(--spacing-xs);
+            border: 1px solid transparent;
+            background: transparent;
+            font-size: var(--font-size-sm);
+            text-align: center;
+        }
+
+        .table-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: var(--bg-primary);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
+        }
+
+        .table-input[readonly] {
+            background: var(--gray-50);
+            color: var(--text-muted);
+            cursor: not-allowed;
+        }
+
+        .calculated-value {
+            background: var(--gray-50);
+            color: var(--text-muted);
+            font-weight: var(--font-weight-medium);
+            padding: var(--spacing-xs);
+            border-radius: var(--border-radius-sm);
+        }
+
+        /* Alert Styles */
+        .alert {
+            padding: var(--spacing-md);
+            border-radius: var(--border-radius);
+            margin: var(--spacing-md) 0;
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-medium);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .alert-success {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        /* Auto-save Indicator */
+        .save-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--secondary);
+            color: var(--text-white);
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--border-radius);
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-medium);
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            z-index: var(--z-fixed);
+        }
+
+        .save-indicator.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Data Dirty Indicator */
+        body.data-dirty::before {
+            content: "● 未保存のデータがあります";
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: var(--warning);
+            color: var(--text-white);
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--border-radius);
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-medium);
+            z-index: var(--z-fixed);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* Loading State */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--spacing-2xl);
+            color: var(--text-muted);
+        }
+
+        .loading-spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid var(--gray-200);
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: var(--spacing-sm);
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 var(--spacing-sm);
+            }
+
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .header-info {
+                justify-content: center;
+            }
+
+            .summary-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: var(--spacing-md);
+            }
+
+            .table-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .western-table {
+                font-size: var(--font-size-xs);
+            }
+
+            .western-table th,
+            .western-table td {
+                padding: var(--spacing-xs);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .summary-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header {
+                padding: var(--spacing-md) 0;
+            }
+
+            .section-title {
+                font-size: var(--font-size-lg);
+            }
+
+            .summary-section,
+            .table-header {
+                padding: var(--spacing-md);
+            }
+        }
+
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+            }
+
+            .header,
+            .table-controls,
+            .btn {
+                display: none;
+            }
+
+            .western-table {
+                font-size: 10px;
+            }
+
+            .western-table th,
+            .western-table td {
+                padding: 2px;
+                border: 1px solid #000;
+            }
+        }
+
+        /* High Contrast Support */
+        @media (prefers-contrast: high) {
+            .western-table th,
+            .western-table td {
+                border-color: var(--text-primary);
+            }
+
+            .calculated-value {
+                border: 1px solid currentColor;
+            }
+        }
+
+        /* Reduced Motion Support */
+        @media (prefers-reduced-motion: reduce) {
+            .btn,
+            .save-indicator {
+                transition: none;
+            }
+
+            .btn:hover {
+                transform: none;
+            }
+
+            @keyframes pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 1; }
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="header-title">
+                    <span>🧁</span>
+                    <h1>洋生ノート管理システム</h1>
+                </div>
+                
+                <div class="header-info">
+                    <div class="info-item">
+                        <label>対象日</label>
+                        <input type="date" id="target-date" value="">
+                    </div>
+                    <div class="info-item">
+                        <label>曜日</label>
+                        <input type="text" id="day-of-week" readonly>
+                    </div>
+                    <div class="info-item">
+                        <label>天気</label>
+                        <select id="weather">
+                            <option value="晴れ">☀️ 晴れ</option>
+                            <option value="曇り">☁️ 曇り</option>
+                            <option value="雨">🌧️ 雨</option>
+                            <option value="雪">❄️ 雪</option>
+                        </select>
+                    </div>
+                    <div class="info-item">
+                        <label>気温 (℃)</label>
+                        <input type="number" id="temperature" min="-10" max="40" value="25">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Summary Section -->
+            <section class="summary-section">
+                <h2 class="section-title">📊 集計サマリー</h2>
+                <div class="summary-grid">
+                    <div class="summary-card">
+                        <span class="icon">📋</span>
+                        <div class="label">計画数合計</div>
+                        <div class="value" id="total-plan">0個</div>
+                    </div>
+                    <div class="summary-card">
+                        <span class="icon">🛒</span>
+                        <div class="label">発注数合計</div>
+                        <div class="value" id="total-order">0個</div>
+                    </div>
+                    <div class="summary-card">
+                        <span class="icon">💰</span>
+                        <div class="label">発注金額</div>
+                        <div class="value" id="total-amount">¥0</div>
+                    </div>
+                    <div class="summary-card">
+                        <span class="icon">🏷️</span>
+                        <div class="label">カテゴリ数</div>
+                        <div class="value" id="category-count">0種類</div>
+                    </div>
+                    <div class="summary-card">
+                        <span class="icon">📦</span>
+                        <div class="label">商品アイテム数</div>
+                        <div class="value" id="item-count">0品</div>
+                    </div>
+                    <div class="summary-card">
+                        <span class="icon">💱</span>
+                        <div class="label">平均単価</div>
+                        <div class="value" id="avg-price">¥0</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Table Section -->
+            <section class="table-section">
+                <div class="table-header">
+                    <h2 class="section-title">📋 商品別詳細管理</h2>
+                    <div class="table-controls">
+                        <button id="add-product-btn" class="btn btn-secondary">➕ 商品追加</button>
+                        <button id="recalculate-btn" class="btn btn-secondary">🧮 再計算</button>
+                        <button id="save-btn" class="btn btn-primary">💾 データ保存</button>
+                        <button id="export-btn" class="btn btn-secondary">📤 CSV出力</button>
+                        <button id="reset-btn" class="btn btn-warning">🔄 リセット</button>
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <div id="loading" class="loading" style="display: none;">
+                        <div class="loading-spinner"></div>
+                        読み込み中...
+                    </div>
+                    <table id="western-table" class="western-table">
+                        <thead>
+                            <tr>
+                                <th>商品C</th>
+                                <th>商品名</th>
+                                <th>単価</th>
+                                <th>計画数(A)</th>
+                                <th>発注数(B)</th>
+                                <th>移動数(C)</th>
+                                <th>移動後在庫(D)</th>
+                                <th>試食(E)</th>
+                                <th>当日在庫残(F)</th>
+                                <th>発注残数(G)</th>
+                                <th>当日終在庫(H)</th>
+                                <th>予約(I)</th>
+                                <th>特注(J)</th>
+                                <th>予想/実績</th>
+                                <th>完売時間</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body">
+                            <!-- データは JavaScript で挿入 -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Auto-save Indicator -->
+    <div id="save-indicator" class="save-indicator">
+        💾 自動保存しました
+    </div>
+
+    <!-- Alert Container -->
+    <div id="alert-container"></div>
+
+    <script>
+        // 洋生ノートスタンドアロン版 - JavaScript
+        class WesternConfectionStandalone {
+            constructor() {
+                this.data = [];
+                this.isDirty = false;
+                this.autoSaveTimer = null;
+                this.autoSaveInterval = 30000; // 30秒
+                
+                // デフォルトデータ
+                this.defaultData = [
+                    // デンマーク関連
+                    { id: '2408', code: '2408', name: 'デンマークCC', price: 1200, category: 'デンマーク関連', plan: 8, order: 8, movement: 0, afterMovement: 8, tasting: 1, dayStock: 8, orderRemain: 0, endStock: 6, reservation: 2, special: 1, forecast: 12, soldoutTime: '18:30' },
+                    { id: '1001', code: '1001', name: 'レアチーズC', price: 1000, category: 'デンマーク関連', plan: 10, order: 10, movement: 0, afterMovement: 10, tasting: 0, dayStock: 10, orderRemain: 0, endStock: 2, reservation: 3, special: 0, forecast: 15, soldoutTime: '19:00' },
+                    
+                    // 洋菓子限定
+                    { id: '3201', code: '3201', name: 'カスタードプリン', price: 480, category: '洋菓子限定', plan: 20, order: 20, movement: 0, afterMovement: 20, tasting: 2, dayStock: 20, orderRemain: 0, endStock: 8, reservation: 5, special: 2, forecast: 25, soldoutTime: '' },
+                    { id: '3202', code: '3202', name: 'とろ生カスタード', price: 520, category: '洋菓子限定', plan: 15, order: 15, movement: 0, afterMovement: 15, tasting: 1, dayStock: 15, orderRemain: 0, endStock: 4, reservation: 3, special: 1, forecast: 18, soldoutTime: '' },
+                    { id: '3203', code: '3203', name: '復刻カスタードP', price: 500, category: '洋菓子限定', plan: 12, order: 12, movement: 0, afterMovement: 12, tasting: 1, dayStock: 12, orderRemain: 0, endStock: 3, reservation: 2, special: 0, forecast: 14, soldoutTime: '' },
+                    { id: '3301', code: '3301', name: '濃厚あまプリン', price: 550, category: '洋菓子限定', plan: 10, order: 10, movement: 0, afterMovement: 10, tasting: 1, dayStock: 10, orderRemain: 0, endStock: 2, reservation: 1, special: 0, forecast: 12, soldoutTime: '' },
+                    { id: '3401', code: '3401', name: 'マフィン', price: 350, category: '洋菓子限定', plan: 25, order: 25, movement: 0, afterMovement: 25, tasting: 2, dayStock: 25, orderRemain: 0, endStock: 8, reservation: 4, special: 1, forecast: 28, soldoutTime: '' },
+                    { id: '3501', code: '3501', name: '完熟マンゴーP', price: 480, category: '洋菓子限定', plan: 18, order: 18, movement: 0, afterMovement: 18, tasting: 1, dayStock: 18, orderRemain: 0, endStock: 5, reservation: 2, special: 0, forecast: 20, soldoutTime: '' },
+                    
+                    // ゼリー
+                    { id: '4101', code: '4101', name: 'マンゴー&オレンジ', price: 270, category: 'ゼリー', plan: 35, order: 35, movement: 0, afterMovement: 35, tasting: 2, dayStock: 35, orderRemain: 0, endStock: 12, reservation: 6, special: 1, forecast: 40, soldoutTime: '' },
+                    { id: '4102', code: '4102', name: 'メロン&白桃', price: 270, category: 'ゼリー', plan: 30, order: 30, movement: 0, afterMovement: 30, tasting: 1, dayStock: 30, orderRemain: 0, endStock: 10, reservation: 4, special: 0, forecast: 35, soldoutTime: '' },
+                    
+                    // その他
+                    { id: '5101', code: '5101', name: '白くまプリン', price: 450, category: 'その他', plan: 8, order: 8, movement: 0, afterMovement: 8, tasting: 0, dayStock: 8, orderRemain: 0, endStock: 3, reservation: 1, special: 0, forecast: 10, soldoutTime: '' },
+                    { id: '5201', code: '5201', name: 'プリンのトルテ', price: 580, category: 'その他', plan: 6, order: 6, movement: 0, afterMovement: 6, tasting: 1, dayStock: 6, orderRemain: 0, endStock: 1, reservation: 1, special: 1, forecast: 8, soldoutTime: '' }
+                ];
+            }
+
+            async init() {
+                try {
+                    this.showLoading(true);
+                    
+                    // 初期化
+                    this.initializeDateFields();
+                    this.loadData();
+                    this.renderTable();
+                    this.updateSummary();
+                    this.attachEventListeners();
+                    this.startAutoSave();
+                    
+                    this.showLoading(false);
+                    this.showAlert('success', '洋生ノートが正常に読み込まれました');
+                    
+                } catch (error) {
+                    console.error('初期化エラー:', error);
+                    this.showAlert('error', '洋生ノートの初期化に失敗しました');
+                }
+            }
+
+            initializeDateFields() {
+                const today = new Date();
+                const dateStr = today.toISOString().slice(0, 10);
+                const dayOfWeek = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'][today.getDay()];
+                
+                document.getElementById('target-date').value = dateStr;
+                document.getElementById('day-of-week').value = dayOfWeek;
+            }
+
+            loadData() {
+                try {
+                    const savedData = localStorage.getItem('westernConfectionData');
+                    if (savedData) {
+                        this.data = JSON.parse(savedData);
+                    } else {
+                        this.data = JSON.parse(JSON.stringify(this.defaultData));
+                        this.saveData(); // 初回保存
+                    }
+                } catch (error) {
+                    console.error('データ読み込みエラー:', error);
+                    this.data = JSON.parse(JSON.stringify(this.defaultData));
+                }
+            }
+
+            saveData() {
+                try {
+                    const saveData = {
+                        data: this.data,
+                        headerInfo: {
+                            date: document.getElementById('target-date').value,
+                            dayOfWeek: document.getElementById('day-of-week').value,
+                            weather: document.getElementById('weather').value,
+                            temperature: document.getElementById('temperature').value
+                        },
+                        lastSaved: new Date().toISOString()
+                    };
+                    
+                    localStorage.setItem('westernConfectionData', JSON.stringify(this.data));
+                    localStorage.setItem('westernConfectionSettings', JSON.stringify(saveData.headerInfo));
+                    
+                    this.clearDirty();
+                    this.showSaveIndicator();
+                    
+                } catch (error) {
+                    console.error('データ保存エラー:', error);
+                    this.showAlert('error', 'データの保存に失敗しました');
+                }
+            }
+
+            renderTable() {
+                const tbody = document.getElementById('table-body');
+                tbody.innerHTML = '';
+
+                // カテゴリ別にグループ化
+                const categories = {
+                    'デンマーク関連': [],
+                    '洋菓子限定': [],
+                    'ゼリー': [],
+                    'その他': []
+                };
+
+                this.data.forEach(item => {
+                    const category = item.category || this.getCategory(item.name);
+                    if (categories[category]) {
+                        categories[category].push(item);
+                    } else {
+                        categories['その他'].push(item);
+                    }
+                });
+
+                // カテゴリごとに表示
+                Object.entries(categories).forEach(([categoryName, items]) => {
+                    if (items.length === 0) return;
+
+                    // カテゴリヘッダー
+                    const categoryRow = document.createElement('tr');
+                    categoryRow.innerHTML = `<td colspan="15" class="category-header">${categoryName}</td>`;
+                    tbody.appendChild(categoryRow);
+
+                    // 商品行
+                    items.forEach(item => {
+                        tbody.appendChild(this.createTableRow(item));
+                    });
+                });
+            }
+
+            createTableRow(item) {
+                const row = document.createElement('tr');
+                row.setAttribute('data-id', item.id);
+                
+                row.innerHTML = `
+                    <td><input type="text" class="table-input" data-field="code" value="${item.code || ''}" readonly></td>
+                    <td><input type="text" class="table-input" data-field="name" value="${item.name || ''}" readonly></td>
+                    <td>¥${this.formatNumber(item.price || 0)}</td>
+                    <td><input type="number" class="table-input" data-field="plan" value="${item.plan || 0}" min="0"></td>
+                    <td><input type="number" class="table-input" data-field="order" value="${item.order || 0}" min="0"></td>
+                    <td><input type="number" class="table-input" data-field="movement" value="${item.movement || 0}"></td>
+                    <td><span class="calculated-value">${item.afterMovement || 0}</span></td>
+                    <td><input type="number" class="table-input" data-field="tasting" value="${item.tasting || 0}" min="0"></td>
+                    <td><span class="calculated-value">${item.dayStock || 0}</span></td>
+                    <td><span class="calculated-value">${item.orderRemain || 0}</span></td>
+                    <td><span class="calculated-value">${item.endStock || 0}</span></td>
+                    <td><input type="number" class="table-input" data-field="reservation" value="${item.reservation || 0}" min="0"></td>
+                    <td><input type="number" class="table-input" data-field="special" value="${item.special || 0}" min="0"></td>
+                    <td><input type="number" class="table-input" data-field="forecast" value="${item.forecast || 0}" min="0"></td>
+                    <td><input type="time" class="table-input" data-field="soldoutTime" value="${item.soldoutTime || ''}"></td>
+                `;
+                
+                return row;
+            }
+
+            getCategory(name) {
+                if (name.includes('デンマーク')) return 'デンマーク関連';
+                if (name.includes('プリン') || name.includes('マフィン')) return '洋菓子限定';
+                if (name.includes('ゼリー') || name.includes('マンゴー') || name.includes('メロン')) return 'ゼリー';
+                return 'その他';
+            }
+
+            performCalculations(item) {
+                try {
+                    // 移動後在庫(D) = 発注数(B) + 移動数(C)
+                    item.afterMovement = (parseFloat(item.order) || 0) + (parseFloat(item.movement) || 0);
+                    
+                    // 当日在庫残(F) = 移動後在庫(D)
+                    item.dayStock = item.afterMovement;
+                    
+                    // 発注残数(G) = 基本的に0
+                    item.orderRemain = item.orderRemain || 0;
+                    
+                    // 当日終在庫(H) = 当日在庫残(F) - 試食(E) - 売上実績
+                    const salesActual = parseFloat(item.forecast) || 0;
+                    const tastingAmount = parseFloat(item.tasting) || 0;
+                    const dayStockAmount = parseFloat(item.dayStock) || 0;
+                    
+                    item.endStock = Math.max(0, dayStockAmount - tastingAmount - salesActual);
+                    
+                } catch (error) {
+                    console.error('計算エラー:', error, item);
+                }
+            }
+
+            updateSummary() {
+                try {
+                    const totalPlan = this.data.reduce((sum, item) => sum + (parseFloat(item.plan) || 0), 0);
+                    const totalOrder = this.data.reduce((sum, item) => sum + (parseFloat(item.order) || 0), 0);
+                    const totalAmount = this.data.reduce((sum, item) => {
+                        const order = parseFloat(item.order) || 0;
+                        const price = parseFloat(item.price) || 0;
+                        return sum + (order * price);
+                    }, 0);
+                    
+                    const categories = new Set(this.data.map(item => item.category || this.getCategory(item.name)));
+                    const categoryCount = categories.size;
+                    const itemCount = this.data.length;
+                    const avgPrice = totalOrder > 0 ? totalAmount / totalOrder : 0;
+
+                    document.getElementById('total-plan').textContent = `${totalPlan}個`;
+                    document.getElementById('total-order').textContent = `${totalOrder}個`;
+                    document.getElementById('total-amount').textContent = `¥${this.formatNumber(totalAmount)}`;
+                    document.getElementById('category-count').textContent = `${categoryCount}種類`;
+                    document.getElementById('item-count').textContent = `${itemCount}品`;
+                    document.getElementById('avg-price').textContent = `¥${this.formatNumber(avgPrice)}`;
+                    
+                } catch (error) {
+                    console.error('サマリー更新エラー:', error);
+                }
+            }
+
+            attachEventListeners() {
+                // 日付変更
+                document.getElementById('target-date').addEventListener('change', (e) => {
+                    const date = new Date(e.target.value);
+                    const dayOfWeek = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'][date.getDay()];
+                    document.getElementById('day-of-week').value = dayOfWeek;
+                    this.markDirty();
+                });
+
+                // 天気・気温変更
+                ['weather', 'temperature'].forEach(id => {
+                    document.getElementById(id).addEventListener('change', () => {
+                        this.markDirty();
+                    });
+                });
+
+                // テーブル入力
+                document.addEventListener('input', (e) => {
+                    if (e.target.classList.contains('table-input')) {
+                        this.handleInputChange(e.target);
+                    }
+                });
+
+                document.addEventListener('change', (e) => {
+                    if (e.target.classList.contains('table-input')) {
+                        this.handleInputChange(e.target);
+                    }
+                });
+
+                // ボタン
+                document.getElementById('add-product-btn').addEventListener('click', () => {
+                    this.addProduct();
+                });
+
+                document.getElementById('recalculate-btn').addEventListener('click', () => {
+                    this.recalculateAll();
+                });
+
+                document.getElementById('save-btn').addEventListener('click', () => {
+                    this.saveData();
+                    this.showAlert('success', 'データを保存しました');
+                });
+
+                document.getElementById('export-btn').addEventListener('click', () => {
+                    this.exportToCSV();
+                });
+
+                document.getElementById('reset-btn').addEventListener('click', () => {
+                    if (confirm('データをリセットしますか？未保存の変更は失われます。')) {
+                        this.resetData();
+                    }
+                });
+
+                // ページ離脱時の警告
+                window.addEventListener('beforeunload', (e) => {
+                    if (this.isDirty) {
+                        e.preventDefault();
+                        e.returnValue = '未保存の変更があります。ページを離れますか？';
+                        return e.returnValue;
+                    }
+                });
+
+                // キーボードショートカット
+                document.addEventListener('keydown', (e) => {
+                    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                        e.preventDefault();
+                        this.saveData();
+                        this.showAlert('success', 'データを保存しました');
+                    }
+                });
+            }
+
+            handleInputChange(input) {
+                try {
+                    const row = input.closest('tr');
+                    const itemId = row.getAttribute('data-id');
+                    const field = input.getAttribute('data-field');
+                    const value = input.value;
+
+                    const item = this.data.find(item => item.id === itemId);
+                    if (!item) return;
+
+                    // 数値フィールドの処理
+                    if (['plan', 'order', 'movement', 'tasting', 'reservation', 'special', 'forecast'].includes(field)) {
+                        item[field] = parseFloat(value) || 0;
+                    } else {
+                        item[field] = value;
+                    }
+
+                    // 自動計算実行
+                    this.performCalculations(item);
+
+                    // 計算結果を表示に反映
+                    this.updateRowDisplay(row, item);
+                    
+                    // サマリー更新
+                    this.updateSummary();
+                    
+                    this.markDirty();
+
+                } catch (error) {
+                    console.error('入力処理エラー:', error);
+                    this.showAlert('error', 'データの更新に失敗しました');
+                }
+            }
+
+            updateRowDisplay(row, item) {
+                const calculatedValues = row.querySelectorAll('.calculated-value');
+                calculatedValues[0].textContent = item.afterMovement || 0; // 移動後在庫
+                calculatedValues[1].textContent = item.dayStock || 0;       // 当日在庫残
+                calculatedValues[2].textContent = item.orderRemain || 0;    // 発注残数
+                calculatedValues[3].textContent = item.endStock || 0;       // 当日終在庫
+            }
+
+            addProduct() {
+                const newId = Date.now().toString();
+                const newItem = {
+                    id: newId,
+                    code: '',
+                    name: '新商品',
+                    price: 0,
+                    category: 'その他',
+                    plan: 0,
+                    order: 0,
+                    movement: 0,
+                    afterMovement: 0,
+                    tasting: 0,
+                    dayStock: 0,
+                    orderRemain: 0,
+                    endStock: 0,
+                    reservation: 0,
+                    special: 0,
+                    forecast: 0,
+                    soldoutTime: ''
+                };
+
+                this.data.push(newItem);
+                this.renderTable();
+                this.updateSummary();
+                this.markDirty();
+                this.showAlert('success', '新しい商品を追加しました');
+            }
+
+            recalculateAll() {
+                this.data.forEach(item => {
+                    this.performCalculations(item);
+                });
+                this.renderTable();
+                this.updateSummary();
+                this.showAlert('success', '全ての計算を再実行しました');
+            }
+
+            resetData() {
+                this.data = JSON.parse(JSON.stringify(this.defaultData));
+                this.renderTable();
+                this.updateSummary();
+                this.clearDirty();
+                this.showAlert('success', 'データをリセットしました');
+            }
+
+            exportToCSV() {
+                try {
+                    const headers = [
+                        '商品C', '商品名', '単価', '計画数(A)', '発注数(B)', '移動数(C)', '移動後在庫(D)',
+                        '試食(E)', '当日在庫残(F)', '発注残数(G)', '当日終在庫(H)', '予約(I)', '特注(J)',
+                        '予想/実績', '完売時間'
+                    ];
+
+                    const headerInfo = {
+                        date: document.getElementById('target-date').value,
+                        dayOfWeek: document.getElementById('day-of-week').value,
+                        weather: document.getElementById('weather').value,
+                        temperature: document.getElementById('temperature').value
+                    };
+
+                    let csvContent = `# 洋生ノート - ${headerInfo.date} (${headerInfo.dayOfWeek})\n`;
+                    csvContent += `# 天気: ${headerInfo.weather}, 気温: ${headerInfo.temperature}℃\n\n`;
+                    csvContent += headers.join(',') + '\n';
+
+                    this.data.forEach(item => {
+                        const row = [
+                            item.code || '',
+                            `"${item.name || ''}"`,
+                            item.price || 0,
+                            item.plan || 0,
+                            item.order || 0,
+                            item.movement || 0,
+                            item.afterMovement || 0,
+                            item.tasting || 0,
+                            item.dayStock || 0,
+                            item.orderRemain || 0,
+                            item.endStock || 0,
+                            item.reservation || 0,
+                            item.special || 0,
+                            item.forecast || 0,
+                            `"${item.soldoutTime || ''}"`
+                        ];
+                        csvContent += row.join(',') + '\n';
+                    });
+
+                    // BOM付きでダウンロード
+                    const bom = '\uFEFF';
+                    const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const link = document.createElement('a');
+                    const url = URL.createObjectURL(blob);
+                    link.href = url;
+                    link.download = `western_confection_${headerInfo.date}.csv`;
+                    link.style.display = 'none';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+
+                    this.showAlert('success', 'CSVファイルをダウンロードしました');
+
+                } catch (error) {
+                    console.error('CSV出力エラー:', error);
+                    this.showAlert('error', 'CSV出力に失敗しました');
+                }
+            }
+
+            formatNumber(num) {
+                return new Intl.NumberFormat('ja-JP').format(num);
+            }
+
+            showLoading(show) {
+                document.getElementById('loading').style.display = show ? 'flex' : 'none';
+                document.getElementById('western-table').style.display = show ? 'none' : 'table';
+            }
+
+            markDirty() {
+                this.isDirty = true;
+                document.body.classList.add('data-dirty');
+                
+                // 自動保存タイマーリセット
+                if (this.autoSaveTimer) {
+                    clearTimeout(this.autoSaveTimer);
+                }
+                
+                this.autoSaveTimer = setTimeout(() => {
+                    if (this.isDirty) {
+                        this.saveData();
+                    }
+                }, this.autoSaveInterval);
+            }
+
+            clearDirty() {
+                this.isDirty = false;
+                document.body.classList.remove('data-dirty');
+            }
+
+            startAutoSave() {
+                // 初回は30秒後に自動保存開始
+                this.autoSaveTimer = setTimeout(() => {
+                    if (this.isDirty) {
+                        this.saveData();
+                    }
+                }, this.autoSaveInterval);
+            }
+
+            showSaveIndicator() {
+                const indicator = document.getElementById('save-indicator');
+                indicator.classList.add('show');
+                setTimeout(() => {
+                    indicator.classList.remove('show');
+                }, 2000);
+            }
+
+            showAlert(type, message) {
+                const container = document.getElementById('alert-container');
+                const alert = document.createElement('div');
+                alert.className = `alert alert-${type}`;
+                alert.innerHTML = `
+                    <span>${this.getAlertIcon(type)}</span>
+                    <span>${message}</span>
+                `;
+                
+                container.appendChild(alert);
+                
+                // 3秒後に自動削除
+                setTimeout(() => {
+                    if (alert.parentNode) {
+                        alert.parentNode.removeChild(alert);
+                    }
+                }, 3000);
+            }
+
+            getAlertIcon(type) {
+                const icons = {
+                    success: '✅',
+                    error: '❌',
+                    warning: '⚠️'
+                };
+                return icons[type] || 'ℹ️';
+            }
+        }
+
+        // アプリケーション初期化
+        document.addEventListener('DOMContentLoaded', async () => {
+            window.westernApp = new WesternConfectionStandalone();
+            await window.westernApp.init();
+            
+            console.log('🧁 洋生ノートスタンドアロン版が正常に起動しました');
+        });
+
+        // デバッグ用
+        if (window.location.search.includes('debug=true')) {
+            window.debugWestern = {
+                getData: () => window.westernApp.data,
+                saveData: () => window.westernApp.saveData(),
+                resetData: () => window.westernApp.resetData(),
+                exportCSV: () => window.westernApp.exportToCSV(),
+                addProduct: () => window.westernApp.addProduct()
+            };
+            console.log('🔧 Debug mode enabled. Use window.debugWestern for debugging.');
+        }
+    </script>
+</body>
+</html>
