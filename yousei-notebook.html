@@ -416,9 +416,36 @@
         }
 
         .reference-content {
+            padding: var(--spacing-md);
             display: flex;
-            gap: var(--spacing-md);
-            align-items: center;
+            flex-direction: column;
+            gap: var(--spacing-lg);
+        }
+        
+        .reference-section {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+        }
+        
+        .reference-section h4 {
+            margin: 0;
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-semibold);
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: var(--spacing-xs);
+        }
+        
+        .reference-cards {
+            display: flex;
+            gap: var(--spacing-sm);
+            flex-wrap: wrap;
+        }
+        
+        .recommendation-cards {
+            display: flex;
+            gap: var(--spacing-sm);
             flex-wrap: wrap;
         }
 
@@ -442,6 +469,26 @@
             font-size: var(--font-size-sm);
             font-weight: var(--font-weight-bold);
             color: var(--text-primary);
+        }
+        
+        .reference-card .sub-value {
+            font-size: var(--font-size-xs);
+            color: var(--text-muted);
+            margin-top: var(--spacing-xs);
+        }
+        
+        .reference-card.recommendation {
+            border-color: var(--primary);
+            background: rgba(52, 152, 219, 0.05);
+        }
+        
+        .reference-card.recommendation .title {
+            color: var(--primary);
+        }
+        
+        .reference-card.recommendation:hover {
+            background: rgba(52, 152, 219, 0.1);
+            cursor: pointer;
         }
 
         .budget-inputs {
@@ -988,8 +1035,8 @@
                     <td><div class="calculated-value">${item.salesQty || 0}</div></td>
                     <td><div class="calculated-value">¥${this.formatNumber(item.revenueEx || 0)}</div></td>
                     <td><input type="number" class="table-input" data-field="reservation" value="${item.reservation || 0}" min="0" step="1"></td>
-                    <td><input type="text" class="table-input" data-field="reference" value="${item.reference || ''}" ${referenceReadonly}></td>
-                    <td><input type="text" class="table-input" data-field="remarks" value="${item.remarks || ''}" ${remarksReadonly}></td>
+                    <td><input type="text" class="table-input" data-field="reference" value="${item.reference || ''}"></td>
+                    <td><input type="text" class="table-input" data-field="remarks" value="${item.remarks || ''}"></td>
                 `;
 
                 // 修正モード時のクリック処理
@@ -1026,37 +1073,133 @@
                 const item = this.data.find(item => item.id === itemId);
                 if (!item) return document.createElement('div');
 
+                // 参照データを取得（実際の実装では過去データから計算）
+                const referenceData = this.getReferenceData(item);
+                const weatherInfo = this.getWeatherInfo();
+                
                 const panel = document.createElement('div');
                 panel.className = 'reference-panel show';
                 
                 panel.innerHTML = `
                     <div class="reference-content">
-                        <div class="reference-card">
-                            <div class="title">前年同曜日</div>
-                            <div class="value">売:22/在:2</div>
-                        </div>
-                        <div class="reference-card">
-                            <div class="title">同日</div>
-                            <div class="value">売:25/在:0</div>
-                        </div>
-                        <div class="reference-card">
-                            <div class="title">直近4回中央値</div>
-                            <div class="value">売:23/在:1</div>
-                        </div>
-                        <div class="budget-inputs">
-                            <div class="budget-row">
-                                <span>D+1予算:</span>
-                                <input type="number" class="budget-input" data-field="budget_d1_amount" value="${item.budget_d1.amountEx || 0}" min="0" step="1">
-                                <span>円</span>
+                        <div class="reference-section">
+                            <h4>📊 販売実績参照</h4>
+                            <div class="reference-cards">
+                                <div class="reference-card">
+                                    <div class="title">前年同曜日</div>
+                                    <div class="value">売:${referenceData.prevYearSameDayOfWeek.sales}/在:${referenceData.prevYearSameDayOfWeek.stock}</div>
+                                    <div class="sub-value">¥${this.formatNumber(referenceData.prevYearSameDayOfWeek.revenue)}</div>
+                                </div>
+                                <div class="reference-card">
+                                    <div class="title">前年同日</div>
+                                    <div class="value">売:${referenceData.prevYearSameDate.sales}/在:${referenceData.prevYearSameDate.stock}</div>
+                                    <div class="sub-value">¥${this.formatNumber(referenceData.prevYearSameDate.revenue)}</div>
+                                </div>
+                                <div class="reference-card">
+                                    <div class="title">直近4回中央値</div>
+                                    <div class="value">売:${referenceData.recent4Median.sales}/在:${referenceData.recent4Median.stock}</div>
+                                    <div class="sub-value">¥${this.formatNumber(referenceData.recent4Median.revenue)}</div>
+                                </div>
+                                <div class="reference-card">
+                                    <div class="title">先週同曜日</div>
+                                    <div class="value">売:${referenceData.lastWeekSameDay.sales}/在:${referenceData.lastWeekSameDay.stock}</div>
+                                    <div class="sub-value">¥${this.formatNumber(referenceData.lastWeekSameDay.revenue)}</div>
+                                </div>
                             </div>
-                            <div class="budget-row">
-                                <span>D+2予算:</span>
-                                <input type="number" class="budget-input" data-field="budget_d2_amount" value="${item.budget_d2.amountEx || 0}" min="0" step="1">
-                                <span>円</span>
+                        </div>
+                        
+                        <div class="reference-section">
+                            <h4>🌤️ 環境情報</h4>
+                            <div class="reference-cards">
+                                <div class="reference-card">
+                                    <div class="title">今日の天気</div>
+                                    <div class="value">${weatherInfo.weather}</div>
+                                    <div class="sub-value">${weatherInfo.temperature}℃</div>
+                                </div>
+                                <div class="reference-card">
+                                    <div class="title">曜日</div>
+                                    <div class="value">${weatherInfo.dayOfWeek}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="reference-section">
+                            <h4>📋 商品詳細情報</h4>
+                            <div class="reference-cards">
+                                <div class="reference-card">
+                                    <div class="title">商品コード</div>
+                                    <div class="value">${item.code || 'N/A'}</div>
+                                </div>
+                                <div class="reference-card">
+                                    <div class="title">単価(税抜)</div>
+                                    <div class="value">¥${this.formatNumber(item.priceEx || 0)}</div>
+                                </div>
+                                <div class="reference-card">
+                                    <div class="title">発注単位</div>
+                                    <div class="value">${item.orderUnit || 1}個</div>
+                                </div>
+                                <div class="reference-card">
+                                    <div class="title">日持ち</div>
+                                    <div class="value">${item.shelfLifeDays || 2}日</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="reference-section">
+                            <h4>💰 予算設定</h4>
+                            <div class="budget-inputs">
+                                <div class="budget-row">
+                                    <span>D+1予算:</span>
+                                    <input type="number" class="budget-input" data-field="budget_d1_amount" value="${item.budget_d1.amountEx || 0}" min="0" step="1">
+                                    <span>円 (${Math.round((item.budget_d1.amountEx || 0) / (item.priceEx || 1))}個)</span>
+                                </div>
+                                <div class="budget-row">
+                                    <span>D+2予算:</span>
+                                    <input type="number" class="budget-input" data-field="budget_d2_amount" value="${item.budget_d2.amountEx || 0}" min="0" step="1">
+                                    <span>円 (${Math.round((item.budget_d2.amountEx || 0) / (item.priceEx || 1))}個)</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="reference-section">
+                            <h4>🎯 推奨入荷数</h4>
+                            <div class="recommendation-cards">
+                                <div class="reference-card recommendation" data-recommendation="${Math.floor(referenceData.recent4Median.sales * 0.8)}">
+                                    <div class="title">保守的</div>
+                                    <div class="value">${Math.floor(referenceData.recent4Median.sales * 0.8)}個</div>
+                                    <div class="sub-value">過去実績80%</div>
+                                </div>
+                                <div class="reference-card recommendation" data-recommendation="${referenceData.recent4Median.sales}">
+                                    <div class="title">標準</div>
+                                    <div class="value">${referenceData.recent4Median.sales}個</div>
+                                    <div class="sub-value">直近中央値</div>
+                                </div>
+                                <div class="reference-card recommendation" data-recommendation="${Math.ceil(referenceData.recent4Median.sales * 1.2)}">
+                                    <div class="title">積極的</div>
+                                    <div class="value">${Math.ceil(referenceData.recent4Median.sales * 1.2)}個</div>
+                                    <div class="sub-value">過去実績120%</div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 `;
+
+                // 推奨値カードのクリックイベントを追加
+                panel.addEventListener('click', (e) => {
+                    const recommendationCard = e.target.closest('.reference-card.recommendation');
+                    if (recommendationCard) {
+                        const recommendedValue = parseInt(recommendationCard.getAttribute('data-recommendation'));
+                        const row = document.querySelector(`tr[data-id="${itemId}"]`);
+                        if (row) {
+                            const arrivalInput = row.querySelector('input[data-field="arrival"]');
+                            if (arrivalInput) {
+                                arrivalInput.value = recommendedValue;
+                                arrivalInput.dispatchEvent(new Event('input', { bubbles: true }));
+                                this.showAlert('success', `推奨入荷数 ${recommendedValue}個 を設定しました`);
+                            }
+                        }
+                    }
+                });
 
                 return panel;
             }
@@ -1677,6 +1820,63 @@
                 const ratio = ((currentRevenue - prevYearRevenue) / prevYearRevenue) * 100;
                 const sign = ratio >= 0 ? '+' : '';
                 return `${sign}${ratio.toFixed(1)}%`;
+            }
+
+            // 参照データ取得
+            getReferenceData(item) {
+                try {
+                    const targetDate = document.getElementById('target-date').value;
+                    const storeId = document.getElementById('store').value;
+                    
+                    // 実際の実装では過去データから計算するが、ここではサンプルデータを返す
+                    const sampleData = {
+                        prevYearSameDayOfWeek: {
+                            sales: Math.floor(Math.random() * 30) + 10,
+                            stock: Math.floor(Math.random() * 5),
+                            revenue: 0
+                        },
+                        prevYearSameDate: {
+                            sales: Math.floor(Math.random() * 25) + 15,
+                            stock: Math.floor(Math.random() * 3),
+                            revenue: 0
+                        },
+                        recent4Median: {
+                            sales: Math.floor(Math.random() * 20) + 12,
+                            stock: Math.floor(Math.random() * 4) + 1,
+                            revenue: 0
+                        },
+                        lastWeekSameDay: {
+                            sales: Math.floor(Math.random() * 18) + 8,
+                            stock: Math.floor(Math.random() * 3),
+                            revenue: 0
+                        }
+                    };
+                    
+                    // 売上金額を計算
+                    Object.keys(sampleData).forEach(key => {
+                        sampleData[key].revenue = sampleData[key].sales * (item.priceEx || 0);
+                    });
+                    
+                    return sampleData;
+                    
+                } catch (error) {
+                    console.error('参照データ取得エラー:', error);
+                    return {
+                        prevYearSameDayOfWeek: { sales: 0, stock: 0, revenue: 0 },
+                        prevYearSameDate: { sales: 0, stock: 0, revenue: 0 },
+                        recent4Median: { sales: 0, stock: 0, revenue: 0 },
+                        lastWeekSameDay: { sales: 0, stock: 0, revenue: 0 }
+                    };
+                }
+            }
+
+            // 天気情報取得
+            getWeatherInfo() {
+                return {
+                    weather: document.getElementById('weather').value || '晴れ',
+                    temperature: document.getElementById('temperature').value || '25',
+                    dayOfWeek: document.getElementById('day-of-week').value || ''
+                };
             }
         }
 
