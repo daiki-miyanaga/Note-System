@@ -391,6 +391,15 @@
             cursor: not-allowed;
         }
 
+        .table-input[data-popup-trigger] {
+            background: linear-gradient(135deg, var(--bg-primary) 90%, var(--primary) 90%);
+            border-color: var(--primary);
+        }
+
+        .table-input[data-popup-trigger]:focus {
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
         .calculated-value {
             background: var(--gray-50);
             color: var(--text-muted);
@@ -403,7 +412,46 @@
             justify-content: center;
         }
 
-        /* Inline Reference Panel */
+        /* Right-side Reference Drawer */
+        .reference-drawer {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 400px;
+            height: 100vh;
+            background: var(--bg-primary);
+            border-left: 2px solid var(--primary);
+            box-shadow: var(--shadow-lg);
+            z-index: 1000;
+            overflow-y: auto;
+            transition: right 0.3s ease;
+        }
+
+        .reference-drawer.show {
+            right: 0;
+        }
+
+        .reference-drawer-header {
+            background: var(--primary);
+            color: var(--text-white);
+            padding: var(--spacing-lg);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .reference-drawer-close {
+            background: none;
+            border: none;
+            color: var(--text-white);
+            font-size: var(--font-size-lg);
+            cursor: pointer;
+        }
+
+        /* Inline Reference Panel (legacy for backward compatibility) */
         .reference-panel {
             display: none;
             background: var(--bg-secondary);
@@ -813,6 +861,7 @@
                                 <th>売上金額(税抜)</th>
                                 <th>予約数</th>
                                 <th>備考</th>
+                                <th>操作</th>
                             </tr>
                         </thead>
                         <tbody id="table-body">
@@ -831,6 +880,17 @@
 
     <!-- Alert Container -->
     <div id="alert-container"></div>
+
+    <!-- Right-side Reference Drawer -->
+    <div id="reference-drawer" class="reference-drawer">
+        <div class="reference-drawer-header">
+            <h3 id="reference-drawer-title">商品参照</h3>
+            <button class="reference-drawer-close" onclick="youseiApp.closeReferenceDrawer()">×</button>
+        </div>
+        <div id="reference-drawer-content" class="reference-content">
+            <!-- 参照データが動的に挿入される -->
+        </div>
+    </div>
 
     <!-- 商品マスタ登録モーダル -->
     <div id="master-modal" class="modal" style="display: none;">
@@ -1026,7 +1086,7 @@
                 row.innerHTML = `
                     <td><input type="text" class="table-input" data-field="name" value="${item.name || ''}" readonly></td>
                     <td>¥${this.formatNumber(item.priceEx || 0)}</td>
-                    <td><input type="number" class="table-input" data-field="arrival" value="${item.arrival || 0}" min="0" step="1"></td>
+                    <td><input type="number" class="table-input" data-field="arrival" value="${item.arrival || 0}" min="0" step="1" data-popup-trigger="true" title="修正モード時にフォーカスすると参照データが表示されます"></td>
                     <td><input type="number" class="table-input" data-field="carryPrev" value="${item.carryPrev || 0}" min="0" step="1"></td>
                     <td><input type="number" class="table-input" data-field="movement" value="${item.movement || 0}" step="1"></td>
                     <td><input type="number" class="table-input" data-field="waste" value="${item.waste || 0}" min="0" step="1"></td>
@@ -1034,9 +1094,10 @@
                     <td><input type="time" class="table-input" data-field="soldoutTime" value="${item.soldoutTime || ''}"></td>
                     <td><div class="calculated-value">${item.salesQty || 0}</div></td>
                     <td><div class="calculated-value">¥${this.formatNumber(item.revenueEx || 0)}</div></td>
-                    <td><input type="number" class="table-input" data-field="reservation" value="${item.reservation || 0}" min="0" step="1"></td>
+                    <td><input type="number" class="table-input" data-field="reservation" value="${item.reservation || 0}" min="0" step="1" data-popup-trigger="true" title="修正モード時にフォーカスすると参照データが表示されます"></td>
                     <td><input type="text" class="table-input" data-field="reference" value="${item.reference || ''}"></td>
                     <td><input type="text" class="table-input" data-field="remarks" value="${item.remarks || ''}"></td>
+                    <td><button class="btn btn-warning delete-row-btn" onclick="youseiApp.deleteRow('${item.id}')">🗑️</button></td>
                 `;
 
                 // 修正モード時のクリック処理
@@ -1050,23 +1111,38 @@
             }
 
             selectRow(rowId) {
-                // 既存の選択をクリア
-                document.querySelectorAll('.reference-panel').forEach(panel => {
-                    panel.remove();
-                });
+                // 同じ行を再選択した場合はドロワーを閉じるだけ
+                if (this.selectedRowId === rowId) {
+                    this.closeReferenceDrawer();
+                    return;
+                }
                 
                 this.selectedRowId = rowId;
-                const selectedRow = document.querySelector(`tr[data-id="${rowId}"]`);
                 
-                if (selectedRow) {
-                    // 参照パネルを作成
-                    const panel = this.createReferencePanel(rowId);
-                    
-                    // 選択行の後に挿入
-                    const panelRow = document.createElement('tr');
-                    panelRow.innerHTML = `<td colspan="12">${panel.outerHTML}</td>`;
-                    selectedRow.insertAdjacentElement('afterend', panelRow);
-                }
+                // 参照データを右側ドロワーに表示
+                this.openReferenceDrawer(rowId);
+            }
+
+            openReferenceDrawer(itemId) {
+                const item = this.data.find(item => item.id === itemId);
+                if (!item) return;
+
+                // ドロワータイトル設定
+                document.getElementById('reference-drawer-title').textContent = `${item.name} - 参照データ`;
+                
+                // 参照パネル内容を生成
+                const panel = this.createReferencePanel(itemId);
+                
+                // ドロワー内容設定
+                document.getElementById('reference-drawer-content').innerHTML = panel.innerHTML;
+                
+                // ドロワー表示
+                document.getElementById('reference-drawer').classList.add('show');
+            }
+
+            closeReferenceDrawer() {
+                document.getElementById('reference-drawer').classList.remove('show');
+                this.selectedRowId = null;
             }
 
             createReferencePanel(itemId) {
@@ -1289,11 +1365,8 @@
                 document.getElementById('modify-mode').addEventListener('change', (e) => {
                     this.modifyMode = e.target.checked;
                     if (!this.modifyMode) {
-                        // 修正モードOFF時は参照パネルを非表示
-                        document.querySelectorAll('.reference-panel').forEach(panel => {
-                            panel.remove();
-                        });
-                        this.selectedRowId = null;
+                        // 修正モードOFF時は参照ドロワーを非表示
+                        this.closeReferenceDrawer();
                     }
                 });
 
@@ -1306,6 +1379,20 @@
                         this.handleBudgetInputChange(e.target);
                     }
                 });
+
+                // 発注項目フォーカス時にポップアップ表示
+                document.addEventListener('focus', (e) => {
+                    if (e.target.hasAttribute('data-popup-trigger')) {
+                        const row = e.target.closest('tr');
+                        const itemId = row?.getAttribute('data-id');
+                        if (itemId && this.modifyMode) {
+                            // 少し遅延させてポップアップ表示（フォーカス処理完了後）
+                            setTimeout(() => {
+                                this.openReferenceDrawer(itemId);
+                            }, 100);
+                        }
+                    }
+                }, true);
 
                 // ボタン
                 document.getElementById('add-row-btn').addEventListener('click', () => {
@@ -1357,12 +1444,9 @@
                         this.saveData();
                         this.showAlert('success', 'データを保存しました');
                     }
-                    if (e.key === 'Escape' && this.modifyMode) {
-                        // ESCキーで参照パネルを閉じる
-                        document.querySelectorAll('.reference-panel').forEach(panel => {
-                            panel.remove();
-                        });
-                        this.selectedRowId = null;
+                    if (e.key === 'Escape') {
+                        // ESCキーで参照ドロワーを閉じる
+                        this.closeReferenceDrawer();
                     }
                 });
 
@@ -1484,34 +1568,18 @@
             }
 
             addRow() {
-                const newId = 'new_' + Date.now();
-                const newItem = {
-                    id: newId,
-                    code: '',
-                    name: '新商品',
-                    priceEx: 0,
-                    orderUnit: 1,
-                    shelfLifeDays: 2,
-                    arrival: 0,
-                    carryPrev: 0,
-                    movement: 0,
-                    waste: 0,
-                    endStock: 0,
-                    soldoutTime: '',
-                    salesQty: 0,
-                    revenueEx: 0,
-                    reservation: 0,
-                    remarks: '',
-                    reference: '',
-                    budget_d1: { qty: 0, amountEx: 0 },
-                    budget_d2: { qty: 0, amountEx: 0 }
-                };
+                // Open master registration modal instead of adding empty row
+                this.openMasterModal();
+            }
 
-                this.data.push(newItem);
-                this.renderTable();
-                this.updateSummary();
-                this.markDirty();
-                this.showAlert('success', '新しい行を追加しました');
+            deleteRow(itemId) {
+                if (confirm('この行を削除しますか？')) {
+                    this.data = this.data.filter(item => item.id !== itemId);
+                    this.renderTable();
+                    this.updateSummary();
+                    this.markDirty();
+                    this.showAlert('success', '行を削除しました');
+                }
             }
 
             recalculateAll() {
@@ -1822,32 +1890,35 @@
                 return `${sign}${ratio.toFixed(1)}%`;
             }
 
-            // 参照データ取得
+            // 参照データ取得 (固定データで行追加バグを防止)
             getReferenceData(item) {
                 try {
                     const targetDate = document.getElementById('target-date').value;
                     const storeId = document.getElementById('store').value;
                     
-                    // 実際の実装では過去データから計算するが、ここではサンプルデータを返す
+                    // 固定サンプルデータを使用して行追加を防止
+                    // 商品コードベースで一貫したデータを生成
+                    const baseValue = item.code ? parseInt(item.code.slice(-2) || '10') : 10;
+                    
                     const sampleData = {
                         prevYearSameDayOfWeek: {
-                            sales: Math.floor(Math.random() * 30) + 10,
-                            stock: Math.floor(Math.random() * 5),
+                            sales: Math.max(5, baseValue + 2),
+                            stock: Math.max(0, Math.floor(baseValue / 10)),
                             revenue: 0
                         },
                         prevYearSameDate: {
-                            sales: Math.floor(Math.random() * 25) + 15,
-                            stock: Math.floor(Math.random() * 3),
+                            sales: Math.max(5, baseValue),
+                            stock: Math.max(0, Math.floor(baseValue / 8)),
                             revenue: 0
                         },
                         recent4Median: {
-                            sales: Math.floor(Math.random() * 20) + 12,
-                            stock: Math.floor(Math.random() * 4) + 1,
+                            sales: Math.max(5, baseValue - 2),
+                            stock: Math.max(0, Math.floor(baseValue / 12)),
                             revenue: 0
                         },
                         lastWeekSameDay: {
-                            sales: Math.floor(Math.random() * 18) + 8,
-                            stock: Math.floor(Math.random() * 3),
+                            sales: Math.max(3, baseValue - 4),
+                            stock: Math.max(0, Math.floor(baseValue / 15)),
                             revenue: 0
                         }
                     };
