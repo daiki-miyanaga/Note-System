@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>洋生ノート - 入荷数変更＋過去参照 一体型システム v1.2</title>
+    
+    <style>
+        /* CSS Reset & Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* Color Palette */
+            --primary: #3498db;
+            --primary-dark: #2980b9;
+            --secondary: #2ecc71;
+            --secondary-dark: #27ae60;
+            --warning: #f39c12;
+            --warning-dark: #e67e22;
+            --error: #e74c3c;
+            --error-dark: #c0392b;
+            --info: #9b59b6;
+            
+            /* Neutral Colors */
+            --white: #ffffff;
+            --gray-50: #f8f9fa;
+            --gray-100: #e9ecef;
+            --gray-200: #dee2e6;
+            --gray-300: #ced4da;
+            --gray-400: #adb5bd;
+            --gray-500: #6c757d;
+            --gray-600: #495057;
+            --gray-700: #343a40;
+            --gray-800: #212529;
+            
+            /* Background */
+            --bg-primary: var(--white);
+            --bg-secondary: var(--gray-50);
+            
+            /* Text */
+            --text-primary: var(--gray-800);
+            --text-secondary: var(--gray-600);
+            --text-muted: var(--gray-500);
+            --text-white: var(--white);
+            
+            /* Border */
+            --border-color: var(--gray-200);
+            --border-radius: 8px;
+            --border-radius-sm: 4px;
+            --border-radius-lg: 12px;
+            
+            /* Spacing */
+            --spacing-xs: 0.25rem;
+            --spacing-sm: 0.5rem;
+            --spacing-md: 1rem;
+            --spacing-lg: 1.5rem;
+            --spacing-xl: 2rem;
+            --spacing-2xl: 3rem;
+            
+            /* Typography */
+            --font-size-xs: 0.75rem;
+            --font-size-sm: 0.875rem;
+            --font-size-base: 1rem;
+            --font-size-lg: 1.125rem;
+            --font-size-xl: 1.25rem;
+            --font-size-2xl: 1.5rem;
+            
+            --font-weight-normal: 400;
+            --font-weight-medium: 500;
+            --font-weight-semibold: 600;
+            --font-weight-bold: 700;
+            
+            /* Shadows */
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background-color: var(--bg-secondary);
+            font-size: var(--font-size-base);
+            min-width: 1280px;
+        }
+
+        .container {
+            max-width: 100%;
+            padding: 0 var(--spacing-lg);
+            margin: 0 auto;
+        }
+
+        /* Header Styles */
+        .header {
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border-color);
+            padding: var(--spacing-lg) 0;
+            margin-bottom: var(--spacing-lg);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: var(--spacing-md);
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .header-title h1 {
+            font-size: var(--font-size-2xl);
+            font-weight: var(--font-weight-bold);
+            color: var(--text-primary);
+        }
+
+        .header-info {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-lg);
+            flex-wrap: wrap;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-xs);
+        }
+
+        .info-item label {
+            font-size: var(--font-size-xs);
+            font-weight: var(--font-weight-medium);
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .info-item input,
+        .info-item select {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-sm);
+            font-size: var(--font-size-sm);
+            background: var(--bg-primary);
+        }
+
+        .info-item input:focus,
+        .info-item select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
+        }
+
+        .info-item input[readonly] {
+            background: var(--gray-50);
+            color: var(--text-muted);
+        }
+
+        /* Summary Cards */
+        .summary-section {
+            background: var(--bg-primary);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-lg);
+            margin-bottom: var(--spacing-lg);
+            box-shadow: var(--shadow);
+        }
+
+        .section-title {
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-semibold);
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-md);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: var(--spacing-md);
+        }
+
+        .summary-card {
+            background: var(--bg-secondary);
+            padding: var(--spacing-md);
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .summary-card .label {
+            font-size: var(--font-size-xs);
+            color: var(--text-secondary);
+            font-weight: var(--font-weight-medium);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .summary-card .value {
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-bold);
+            color: var(--text-primary);
+        }
+
+        /* Toolbar */
+        .toolbar-section {
+            background: var(--bg-primary);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-lg);
+            margin-bottom: var(--spacing-lg);
+            box-shadow: var(--shadow);
+        }
+
+        .toolbar {
+            display: flex;
+            gap: var(--spacing-md);
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            padding: var(--spacing-sm) var(--spacing-md);
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-medium);
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            min-height: 36px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: var(--text-white);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            background: var(--gray-100);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-200);
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: var(--text-white);
+        }
+
+        .btn-warning:hover {
+            background: var(--warning-dark);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--gray-300);
+            transition: 0.4s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: var(--primary);
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+
+        /* Table Section */
+        .table-section {
+            background: var(--bg-primary);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            min-height: 400px;
+        }
+
+        .main-table {
+            width: 100%;
+            min-width: 1400px;
+            border-collapse: collapse;
+            font-size: var(--font-size-sm);
+        }
+
+        .main-table th,
+        .main-table td {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border: 1px solid var(--border-color);
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .main-table th {
+            background: var(--gray-100);
+            font-weight: var(--font-weight-semibold);
+            font-size: var(--font-size-xs);
+            color: var(--text-primary);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .main-table tbody tr:nth-child(even) {
+            background: var(--gray-50);
+        }
+
+        .main-table tbody tr:hover {
+            background: rgba(52, 152, 219, 0.05);
+        }
+
+        /* Input Styles */
+        .table-input {
+            width: 100%;
+            padding: var(--spacing-xs);
+            border: 1px solid transparent;
+            background: transparent;
+            font-size: var(--font-size-sm);
+            text-align: center;
+        }
+
+        .table-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: var(--bg-primary);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
+        }
+
+        .table-input[readonly] {
+            background: var(--gray-50);
+            color: var(--text-muted);
+            cursor: not-allowed;
+        }
+
+        .calculated-value {
+            background: var(--gray-50);
+            color: var(--text-muted);
+            font-weight: var(--font-weight-medium);
+            padding: var(--spacing-xs);
+            border-radius: var(--border-radius-sm);
+            min-height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Inline Reference Panel */
+        .reference-panel {
+            display: none;
+            background: var(--bg-secondary);
+            border-top: 2px solid var(--primary);
+            padding: var(--spacing-md);
+        }
+
+        .reference-panel.show {
+            display: block;
+        }
+
+        .reference-content {
+            display: flex;
+            gap: var(--spacing-md);
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .reference-card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-sm);
+            min-width: 120px;
+            text-align: center;
+        }
+
+        .reference-card .title {
+            font-size: var(--font-size-xs);
+            font-weight: var(--font-weight-semibold);
+            color: var(--text-secondary);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .reference-card .value {
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-bold);
+            color: var(--text-primary);
+        }
+
+        .budget-inputs {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+        }
+
+        .budget-row {
+            display: flex;
+            gap: var(--spacing-sm);
+            align-items: center;
+        }
+
+        .budget-input {
+            width: 80px;
+            padding: var(--spacing-xs);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-sm);
+            font-size: var(--font-size-sm);
+            text-align: center;
+        }
+
+        /* Auto-save Indicator */
+        .save-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--secondary);
+            color: var(--text-white);
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--border-radius);
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-medium);
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .save-indicator.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Data Dirty Indicator */
+        body.data-dirty::after {
+            content: "● 未保存のデータがあります";
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: var(--warning);
+            color: var(--text-white);
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--border-radius);
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-medium);
+            z-index: 1000;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* Alert Styles */
+        .alert {
+            padding: var(--spacing-md);
+            border-radius: var(--border-radius);
+            margin: var(--spacing-md) 0;
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-medium);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .alert-success {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        /* Validation Error */
+        .validation-error {
+            border-color: var(--error) !important;
+            box-shadow: 0 0 0 2px rgba(231, 76, 60, 0.1) !important;
+        }
+
+        .error-tooltip {
+            position: absolute;
+            background: var(--error);
+            color: var(--text-white);
+            padding: var(--spacing-xs);
+            border-radius: var(--border-radius-sm);
+            font-size: var(--font-size-xs);
+            white-space: nowrap;
+            z-index: 1000;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="header-title">
+                    <span>🧁</span>
+                    <h1>洋生ノート</h1>
+                </div>
+                
+                <div class="header-info">
+                    <div class="info-item">
+                        <label>対象日</label>
+                        <input type="date" id="target-date" value="">
+                    </div>
+                    <div class="info-item">
+                        <label>曜日</label>
+                        <input type="text" id="day-of-week" readonly>
+                    </div>
+                    <div class="info-item">
+                        <label>天気</label>
+                        <select id="weather">
+                            <option value="晴れ">☀️ 晴れ</option>
+                            <option value="曇り">☁️ 曇り</option>
+                            <option value="雨">🌧️ 雨</option>
+                            <option value="雪">❄️ 雪</option>
+                        </select>
+                    </div>
+                    <div class="info-item">
+                        <label>気温 (℃)</label>
+                        <input type="number" id="temperature" min="-10" max="40" value="25">
+                    </div>
+                    <div class="info-item">
+                        <label>店舗</label>
+                        <select id="store">
+                            <option value="KRB01">KRB01</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Summary Section -->
+            <section class="summary-section">
+                <h2 class="section-title">📊 集計サマリー</h2>
+                <div class="summary-grid">
+                    <div class="summary-card">
+                        <div class="label">アイテム数</div>
+                        <div class="value" id="item-count">0品</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="label">入荷合計</div>
+                        <div class="value" id="total-arrival">0個</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="label">売上個数</div>
+                        <div class="value" id="total-sales-qty">0個</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="label">売上金額(税抜)</div>
+                        <div class="value" id="total-revenue">¥0</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="label">ロス合計</div>
+                        <div class="value" id="total-waste">0個</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="label">完売警告</div>
+                        <div class="value" id="soldout-warnings">0件</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="label">D+1予算</div>
+                        <div class="value" id="d1-budget">0個 / ¥0</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="label">D+2予算</div>
+                        <div class="value" id="d2-budget">0個 / ¥0</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Toolbar Section -->
+            <section class="toolbar-section">
+                <div class="toolbar">
+                    <button id="add-row-btn" class="btn btn-secondary">➕ 行追加</button>
+                    <button id="recalculate-btn" class="btn btn-secondary">🧮 再計算</button>
+                    <button id="save-btn" class="btn btn-primary">💾 保存</button>
+                    <button id="export-csv-btn" class="btn btn-secondary">📤 CSV出力</button>
+                    
+                    <div style="display: flex; align-items: center; gap: var(--spacing-sm);">
+                        <span>修正モード</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="modify-mode">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div style="display: flex; align-items: center; gap: var(--spacing-sm);">
+                        <span>参照:</span>
+                        <select id="reference-preset">
+                            <option value="prevYearSameDayOfWeek">前年同曜日</option>
+                            <option value="sameDate">同日</option>
+                            <option value="recentMedian">直近4回中央値</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Table Section -->
+            <section class="table-section">
+                <div class="table-container">
+                    <table class="main-table">
+                        <thead>
+                            <tr>
+                                <th>商品名</th>
+                                <th>単価(税抜)</th>
+                                <th>入荷</th>
+                                <th>前日持越</th>
+                                <th>店間移動(±)</th>
+                                <th>ロス</th>
+                                <th>閉店時在庫</th>
+                                <th>完売時間</th>
+                                <th>売上個数</th>
+                                <th>売上金額(税抜)</th>
+                                <th>予約数</th>
+                                <th>備考</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body">
+                            <!-- データは JavaScript で挿入 -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Auto-save Indicator -->
+    <div id="save-indicator" class="save-indicator">
+        💾 自動保存しました
+    </div>
+
+    <!-- Alert Container -->
+    <div id="alert-container"></div>
+
+    <script>
+        // 洋生ノート v1.2 メインアプリケーション
+        class YouseiNotebook {
+            constructor() {
+                this.data = [];
+                this.masterData = this.initMasterData();
+                this.isDirty = false;
+                this.autoSaveTimer = null;
+                this.autoSaveInterval = 30000; // 30秒
+                this.modifyMode = false;
+                this.selectedRowId = null;
+            }
+
+            // マスタデータ初期化
+            initMasterData() {
+                return {
+                    products: [
+                        { code: '3201', name: 'カスタードプリン', priceEx: 444, taxRate: 0.1, orderUnit: 6, shelfLifeDays: 2 },
+                        { code: '3202', name: 'ショートケーキ', priceEx: 555, taxRate: 0.1, orderUnit: 12, shelfLifeDays: 1 },
+                        { code: '3203', name: 'チョコケーキ', priceEx: 600, taxRate: 0.1, orderUnit: 8, shelfLifeDays: 2 },
+                        { code: '3301', name: '濃厚チーズケーキ', priceEx: 650, taxRate: 0.1, orderUnit: 6, shelfLifeDays: 3 },
+                        { code: '3401', name: 'フルーツタルト', priceEx: 750, taxRate: 0.1, orderUnit: 6, shelfLifeDays: 1 }
+                    ],
+                    stores: [
+                        { storeId: 'KRB01', name: '倉敷店', closingTime: '20:00', holidayCalendarId: 'default' }
+                    ],
+                    holidays: []
+                };
+            }
+
+            async init() {
+                try {
+                    this.initializeDateFields();
+                    this.loadData();
+                    this.renderTable();
+                    this.updateSummary();
+                    this.attachEventListeners();
+                    this.startAutoSave();
+                    
+                    this.showAlert('success', '洋生ノートが正常に読み込まれました');
+                    
+                } catch (error) {
+                    console.error('初期化エラー:', error);
+                    this.showAlert('error', '洋生ノートの初期化に失敗しました');
+                }
+            }
+
+            initializeDateFields() {
+                const today = new Date();
+                const dateStr = today.toISOString().slice(0, 10);
+                const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+                const dayOfWeek = dayNames[today.getDay()];
+                
+                document.getElementById('target-date').value = dateStr;
+                document.getElementById('day-of-week').value = dayOfWeek + '曜日';
+            }
+
+            loadData() {
+                try {
+                    const targetDate = document.getElementById('target-date').value;
+                    const storeId = document.getElementById('store').value;
+                    const key = `yousei:${storeId}:${targetDate}`;
+                    
+                    const savedData = localStorage.getItem(key);
+                    if (savedData) {
+                        const parsed = JSON.parse(savedData);
+                        this.data = parsed.details || [];
+                    } else {
+                        // 初期データ作成
+                        this.data = this.masterData.products.map(product => ({
+                            id: product.code,
+                            code: product.code,
+                            name: product.name,
+                            priceEx: product.priceEx,
+                            orderUnit: product.orderUnit,
+                            shelfLifeDays: product.shelfLifeDays,
+                            arrival: 0,
+                            carryPrev: 0,
+                            movement: 0,
+                            waste: 0,
+                            endStock: 0,
+                            soldoutTime: '',
+                            salesQty: 0,
+                            revenueEx: 0,
+                            reservation: 0,
+                            remarks: '',
+                            budget_d1: { qty: 0, amountEx: 0 },
+                            budget_d2: { qty: 0, amountEx: 0 }
+                        }));
+                    }
+                } catch (error) {
+                    console.error('データ読み込みエラー:', error);
+                    this.data = [];
+                }
+            }
+
+            saveData() {
+                try {
+                    const targetDate = document.getElementById('target-date').value;
+                    const storeId = document.getElementById('store').value;
+                    const key = `yousei:${storeId}:${targetDate}`;
+                    
+                    const saveData = {
+                        header: {
+                            date: targetDate,
+                            storeId: storeId,
+                            weather: document.getElementById('weather').value,
+                            temperature: parseInt(document.getElementById('temperature').value) || 25
+                        },
+                        details: this.data
+                    };
+                    
+                    localStorage.setItem(key, JSON.stringify(saveData));
+                    
+                    this.clearDirty();
+                    this.showSaveIndicator();
+                    
+                } catch (error) {
+                    console.error('データ保存エラー:', error);
+                    this.showAlert('error', 'データの保存に失敗しました');
+                }
+            }
+
+            renderTable() {
+                const tbody = document.getElementById('table-body');
+                tbody.innerHTML = '';
+
+                this.data.forEach(item => {
+                    const row = this.createTableRow(item);
+                    tbody.appendChild(row);
+                });
+            }
+
+            createTableRow(item) {
+                const row = document.createElement('tr');
+                row.setAttribute('data-id', item.id);
+                
+                row.innerHTML = `
+                    <td><input type="text" class="table-input" data-field="name" value="${item.name || ''}" readonly></td>
+                    <td>¥${this.formatNumber(item.priceEx || 0)}</td>
+                    <td><input type="number" class="table-input" data-field="arrival" value="${item.arrival || 0}" min="0" step="1"></td>
+                    <td><input type="number" class="table-input" data-field="carryPrev" value="${item.carryPrev || 0}" min="0" step="1"></td>
+                    <td><input type="number" class="table-input" data-field="movement" value="${item.movement || 0}" step="1"></td>
+                    <td><input type="number" class="table-input" data-field="waste" value="${item.waste || 0}" min="0" step="1"></td>
+                    <td><input type="number" class="table-input" data-field="endStock" value="${item.endStock || 0}" min="0" step="1"></td>
+                    <td><input type="time" class="table-input" data-field="soldoutTime" value="${item.soldoutTime || ''}"></td>
+                    <td><div class="calculated-value">${item.salesQty || 0}</div></td>
+                    <td><div class="calculated-value">¥${this.formatNumber(item.revenueEx || 0)}</div></td>
+                    <td><input type="number" class="table-input" data-field="reservation" value="${item.reservation || 0}" min="0" step="1"></td>
+                    <td><input type="text" class="table-input" data-field="remarks" value="${item.remarks || ''}"></td>
+                `;
+
+                // 修正モード時のクリック処理
+                row.addEventListener('click', (e) => {
+                    if (this.modifyMode && !e.target.classList.contains('table-input')) {
+                        this.selectRow(item.id);
+                    }
+                });
+
+                return row;
+            }
+
+            selectRow(rowId) {
+                // 既存の選択をクリア
+                document.querySelectorAll('.reference-panel').forEach(panel => {
+                    panel.remove();
+                });
+                
+                this.selectedRowId = rowId;
+                const selectedRow = document.querySelector(`tr[data-id="${rowId}"]`);
+                
+                if (selectedRow) {
+                    // 参照パネルを作成
+                    const panel = this.createReferencePanel(rowId);
+                    
+                    // 選択行の後に挿入
+                    const panelRow = document.createElement('tr');
+                    panelRow.innerHTML = `<td colspan="12">${panel.outerHTML}</td>`;
+                    selectedRow.insertAdjacentElement('afterend', panelRow);
+                }
+            }
+
+            createReferencePanel(itemId) {
+                const item = this.data.find(item => item.id === itemId);
+                if (!item) return document.createElement('div');
+
+                const panel = document.createElement('div');
+                panel.className = 'reference-panel show';
+                
+                panel.innerHTML = `
+                    <div class="reference-content">
+                        <div class="reference-card">
+                            <div class="title">前年同曜日</div>
+                            <div class="value">売:22/在:2</div>
+                        </div>
+                        <div class="reference-card">
+                            <div class="title">同日</div>
+                            <div class="value">売:25/在:0</div>
+                        </div>
+                        <div class="reference-card">
+                            <div class="title">直近4回中央値</div>
+                            <div class="value">売:23/在:1</div>
+                        </div>
+                        <div class="budget-inputs">
+                            <div class="budget-row">
+                                <span>D+1予算(個):</span>
+                                <input type="number" class="budget-input" data-field="budget_d1_qty" value="${item.budget_d1.qty || 0}" min="0">
+                                <span>金額: ¥${this.formatNumber((item.budget_d1.qty || 0) * item.priceEx)}</span>
+                            </div>
+                            <div class="budget-row">
+                                <span>D+2予算(個):</span>
+                                <input type="number" class="budget-input" data-field="budget_d2_qty" value="${item.budget_d2.qty || 0}" min="0">
+                                <span>金額: ¥${this.formatNumber((item.budget_d2.qty || 0) * item.priceEx)}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                return panel;
+            }
+
+            performCalculations(item) {
+                try {
+                    // 売上個数 = max(0, 入荷 + 前日持越し + 店間移動(±) - 閉店時在庫 - ロス)
+                    const arrival = parseFloat(item.arrival) || 0;
+                    const carryPrev = parseFloat(item.carryPrev) || 0;
+                    const movement = parseFloat(item.movement) || 0;
+                    const endStock = parseFloat(item.endStock) || 0;
+                    const waste = parseFloat(item.waste) || 0;
+                    
+                    item.salesQty = Math.max(0, arrival + carryPrev + movement - endStock - waste);
+                    
+                    // 売上金額(税抜) = 売上個数 × 税抜単価
+                    item.revenueEx = item.salesQty * item.priceEx;
+                    
+                    // D+1/D+2予算金額の計算
+                    item.budget_d1.amountEx = item.budget_d1.qty * item.priceEx;
+                    item.budget_d2.amountEx = item.budget_d2.qty * item.priceEx;
+                    
+                } catch (error) {
+                    console.error('計算エラー:', error, item);
+                }
+            }
+
+            updateSummary() {
+                try {
+                    const itemCount = this.data.length;
+                    const totalArrival = this.data.reduce((sum, item) => sum + (parseFloat(item.arrival) || 0), 0);
+                    const totalSalesQty = this.data.reduce((sum, item) => sum + (parseFloat(item.salesQty) || 0), 0);
+                    const totalRevenue = this.data.reduce((sum, item) => sum + (parseFloat(item.revenueEx) || 0), 0);
+                    const totalWaste = this.data.reduce((sum, item) => sum + (parseFloat(item.waste) || 0), 0);
+                    
+                    // 完売警告件数（endStock=0 かつ soldoutTime入力あり）
+                    const soldoutWarnings = this.data.filter(item => 
+                        (parseFloat(item.endStock) || 0) === 0 && item.soldoutTime
+                    ).length;
+                    
+                    // D+1/D+2予算合計
+                    const d1BudgetQty = this.data.reduce((sum, item) => sum + (item.budget_d1.qty || 0), 0);
+                    const d1BudgetAmount = this.data.reduce((sum, item) => sum + (item.budget_d1.amountEx || 0), 0);
+                    const d2BudgetQty = this.data.reduce((sum, item) => sum + (item.budget_d2.qty || 0), 0);
+                    const d2BudgetAmount = this.data.reduce((sum, item) => sum + (item.budget_d2.amountEx || 0), 0);
+
+                    document.getElementById('item-count').textContent = `${itemCount}品`;
+                    document.getElementById('total-arrival').textContent = `${totalArrival}個`;
+                    document.getElementById('total-sales-qty').textContent = `${totalSalesQty}個`;
+                    document.getElementById('total-revenue').textContent = `¥${this.formatNumber(totalRevenue)}`;
+                    document.getElementById('total-waste').textContent = `${totalWaste}個`;
+                    document.getElementById('soldout-warnings').textContent = `${soldoutWarnings}件`;
+                    document.getElementById('d1-budget').textContent = `${d1BudgetQty}個 / ¥${this.formatNumber(d1BudgetAmount)}`;
+                    document.getElementById('d2-budget').textContent = `${d2BudgetQty}個 / ¥${this.formatNumber(d2BudgetAmount)}`;
+                    
+                } catch (error) {
+                    console.error('サマリー更新エラー:', error);
+                }
+            }
+
+            attachEventListeners() {
+                // 日付変更
+                document.getElementById('target-date').addEventListener('change', (e) => {
+                    const date = new Date(e.target.value);
+                    const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+                    const dayOfWeek = dayNames[date.getDay()];
+                    document.getElementById('day-of-week').value = dayOfWeek + '曜日';
+                    this.loadData(); // 日付変更時はデータを再読み込み
+                    this.renderTable();
+                    this.updateSummary();
+                });
+
+                // 天気・気温・店舗変更
+                ['weather', 'temperature', 'store'].forEach(id => {
+                    document.getElementById(id).addEventListener('change', () => {
+                        this.markDirty();
+                    });
+                });
+
+                // 修正モード切替
+                document.getElementById('modify-mode').addEventListener('change', (e) => {
+                    this.modifyMode = e.target.checked;
+                    if (!this.modifyMode) {
+                        // 修正モードOFF時は参照パネルを非表示
+                        document.querySelectorAll('.reference-panel').forEach(panel => {
+                            panel.remove();
+                        });
+                        this.selectedRowId = null;
+                    }
+                });
+
+                // テーブル入力
+                document.addEventListener('input', (e) => {
+                    if (e.target.classList.contains('table-input')) {
+                        this.handleInputChange(e.target);
+                    }
+                    if (e.target.classList.contains('budget-input')) {
+                        this.handleBudgetInputChange(e.target);
+                    }
+                });
+
+                // ボタン
+                document.getElementById('add-row-btn').addEventListener('click', () => {
+                    this.addRow();
+                });
+
+                document.getElementById('recalculate-btn').addEventListener('click', () => {
+                    this.recalculateAll();
+                });
+
+                document.getElementById('save-btn').addEventListener('click', () => {
+                    this.saveData();
+                    this.showAlert('success', 'データを保存しました');
+                });
+
+                document.getElementById('export-csv-btn').addEventListener('click', () => {
+                    this.exportToCSV();
+                });
+
+                // キーボードショートカット
+                document.addEventListener('keydown', (e) => {
+                    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                        e.preventDefault();
+                        this.saveData();
+                        this.showAlert('success', 'データを保存しました');
+                    }
+                    if (e.key === 'Escape' && this.modifyMode) {
+                        // ESCキーで参照パネルを閉じる
+                        document.querySelectorAll('.reference-panel').forEach(panel => {
+                            panel.remove();
+                        });
+                        this.selectedRowId = null;
+                    }
+                });
+
+                // ページ離脱時の警告
+                window.addEventListener('beforeunload', (e) => {
+                    if (this.isDirty) {
+                        e.preventDefault();
+                        e.returnValue = '未保存の変更があります。ページを離れますか？';
+                        return e.returnValue;
+                    }
+                });
+            }
+
+            handleInputChange(input) {
+                try {
+                    const row = input.closest('tr');
+                    const itemId = row.getAttribute('data-id');
+                    const field = input.getAttribute('data-field');
+                    const value = input.value;
+
+                    const item = this.data.find(item => item.id === itemId);
+                    if (!item) return;
+
+                    // 数値フィールドの処理
+                    if (['arrival', 'carryPrev', 'movement', 'waste', 'endStock', 'reservation'].includes(field)) {
+                        item[field] = parseFloat(value) || 0;
+                        
+                        // 入荷数の発注単位チェック
+                        if (field === 'arrival') {
+                            this.validateOrderUnit(input, item);
+                        }
+                    } else {
+                        item[field] = value;
+                    }
+
+                    // 自動計算実行
+                    this.performCalculations(item);
+
+                    // 計算結果を表示に反映
+                    this.updateRowDisplay(row, item);
+                    
+                    // サマリー更新
+                    this.updateSummary();
+                    
+                    this.markDirty();
+
+                } catch (error) {
+                    console.error('入力処理エラー:', error);
+                    this.showAlert('error', 'データの更新に失敗しました');
+                }
+            }
+
+            handleBudgetInputChange(input) {
+                try {
+                    const field = input.getAttribute('data-field');
+                    const value = parseFloat(input.value) || 0;
+                    
+                    const item = this.data.find(item => item.id === this.selectedRowId);
+                    if (!item) return;
+
+                    if (field === 'budget_d1_qty') {
+                        item.budget_d1.qty = value;
+                        item.budget_d1.amountEx = value * item.priceEx;
+                    } else if (field === 'budget_d2_qty') {
+                        item.budget_d2.qty = value;
+                        item.budget_d2.amountEx = value * item.priceEx;
+                    }
+
+                    // 金額表示を更新
+                    const budgetRow = input.closest('.budget-row');
+                    const amountSpan = budgetRow.querySelector('span:last-child');
+                    if (field === 'budget_d1_qty') {
+                        amountSpan.textContent = `金額: ¥${this.formatNumber(item.budget_d1.amountEx)}`;
+                    } else if (field === 'budget_d2_qty') {
+                        amountSpan.textContent = `金額: ¥${this.formatNumber(item.budget_d2.amountEx)}`;
+                    }
+                    
+                    this.updateSummary();
+                    this.markDirty();
+
+                } catch (error) {
+                    console.error('予算入力処理エラー:', error);
+                }
+            }
+
+            validateOrderUnit(input, item) {
+                const arrival = parseFloat(input.value) || 0;
+                const orderUnit = item.orderUnit || 1;
+                
+                if (arrival % orderUnit !== 0) {
+                    input.classList.add('validation-error');
+                    
+                    // 候補値を計算
+                    const lower = Math.floor(arrival / orderUnit) * orderUnit;
+                    const upper = Math.ceil(arrival / orderUnit) * orderUnit;
+                    
+                    this.showValidationTooltip(input, `発注単位は${orderUnit}の倍数で入力してください（候補: ${lower}, ${upper}）`);
+                } else {
+                    input.classList.remove('validation-error');
+                    this.hideValidationTooltip(input);
+                }
+            }
+
+            showValidationTooltip(input, message) {
+                let tooltip = input.parentNode.querySelector('.error-tooltip');
+                if (!tooltip) {
+                    tooltip = document.createElement('div');
+                    tooltip.className = 'error-tooltip';
+                    input.parentNode.style.position = 'relative';
+                    input.parentNode.appendChild(tooltip);
+                }
+                tooltip.textContent = message;
+                tooltip.style.top = '100%';
+                tooltip.style.left = '0';
+            }
+
+            hideValidationTooltip(input) {
+                const tooltip = input.parentNode.querySelector('.error-tooltip');
+                if (tooltip) {
+                    tooltip.remove();
+                }
+            }
+
+            updateRowDisplay(row, item) {
+                const calculatedValues = row.querySelectorAll('.calculated-value');
+                calculatedValues[0].textContent = item.salesQty || 0; // 売上個数
+                calculatedValues[1].textContent = `¥${this.formatNumber(item.revenueEx || 0)}`; // 売上金額
+            }
+
+            addRow() {
+                const newId = 'new_' + Date.now();
+                const newItem = {
+                    id: newId,
+                    code: '',
+                    name: '新商品',
+                    priceEx: 0,
+                    orderUnit: 1,
+                    shelfLifeDays: 2,
+                    arrival: 0,
+                    carryPrev: 0,
+                    movement: 0,
+                    waste: 0,
+                    endStock: 0,
+                    soldoutTime: '',
+                    salesQty: 0,
+                    revenueEx: 0,
+                    reservation: 0,
+                    remarks: '',
+                    budget_d1: { qty: 0, amountEx: 0 },
+                    budget_d2: { qty: 0, amountEx: 0 }
+                };
+
+                this.data.push(newItem);
+                this.renderTable();
+                this.updateSummary();
+                this.markDirty();
+                this.showAlert('success', '新しい行を追加しました');
+            }
+
+            recalculateAll() {
+                this.data.forEach(item => {
+                    this.performCalculations(item);
+                });
+                this.renderTable();
+                this.updateSummary();
+                this.showAlert('success', '全ての計算を再実行しました');
+            }
+
+            exportToCSV() {
+                try {
+                    const headers = [
+                        '商品C', '商品名', '単価(税抜)', '入荷', '前日持越し', '店間移動(±)', 'ロス', '閉店時在庫', 
+                        '完売時間', '売上個数', '売上金額(税抜)', '予約数', '備考', 
+                        'D+1予算(個)', 'D+1予算金額(税抜)', 'D+2予算(個)', 'D+2予算金額(税抜)'
+                    ];
+
+                    const headerInfo = {
+                        date: document.getElementById('target-date').value,
+                        dayOfWeek: document.getElementById('day-of-week').value,
+                        weather: document.getElementById('weather').value,
+                        temperature: document.getElementById('temperature').value
+                    };
+
+                    // D+1/D+2予算合計
+                    const d1BudgetQty = this.data.reduce((sum, item) => sum + (item.budget_d1.qty || 0), 0);
+                    const d1BudgetAmount = this.data.reduce((sum, item) => sum + (item.budget_d1.amountEx || 0), 0);
+                    const d2BudgetQty = this.data.reduce((sum, item) => sum + (item.budget_d2.qty || 0), 0);
+                    const d2BudgetAmount = this.data.reduce((sum, item) => sum + (item.budget_d2.amountEx || 0), 0);
+
+                    let csvContent = `# 洋生ノート - ${headerInfo.date} (${headerInfo.dayOfWeek})\n`;
+                    csvContent += `# 天気: ${headerInfo.weather}, 気温: ${headerInfo.temperature}℃\n`;
+                    csvContent += `# D+1予算 合計：${d1BudgetQty}個 / ¥${this.formatNumber(d1BudgetAmount)}\n`;
+                    csvContent += `# D+2予算 合計：${d2BudgetQty}個 / ¥${this.formatNumber(d2BudgetAmount)}\n\n`;
+                    csvContent += headers.join(',') + '\n';
+
+                    this.data.forEach(item => {
+                        const row = [
+                            item.code || '',
+                            `"${item.name || ''}"`,
+                            item.priceEx || 0,
+                            item.arrival || 0,
+                            item.carryPrev || 0,
+                            item.movement || 0,
+                            item.waste || 0,
+                            item.endStock || 0,
+                            `"${item.soldoutTime || ''}"`,
+                            item.salesQty || 0,
+                            item.revenueEx || 0,
+                            item.reservation || 0,
+                            `"${item.remarks || ''}"`,
+                            item.budget_d1.qty || 0,
+                            item.budget_d1.amountEx || 0,
+                            item.budget_d2.qty || 0,
+                            item.budget_d2.amountEx || 0
+                        ];
+                        csvContent += row.join(',') + '\n';
+                    });
+
+                    // BOM付きでダウンロード
+                    const bom = '\uFEFF';
+                    const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const link = document.createElement('a');
+                    const url = URL.createObjectURL(blob);
+                    link.href = url;
+                    link.download = `yousei_notebook_${headerInfo.date}.csv`;
+                    link.style.display = 'none';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+
+                    this.showAlert('success', 'CSVファイルをダウンロードしました');
+
+                } catch (error) {
+                    console.error('CSV出力エラー:', error);
+                    this.showAlert('error', 'CSV出力に失敗しました');
+                }
+            }
+
+            formatNumber(num) {
+                return new Intl.NumberFormat('ja-JP').format(num);
+            }
+
+            markDirty() {
+                this.isDirty = true;
+                document.body.classList.add('data-dirty');
+                
+                // 自動保存タイマーリセット
+                if (this.autoSaveTimer) {
+                    clearTimeout(this.autoSaveTimer);
+                }
+                
+                this.autoSaveTimer = setTimeout(() => {
+                    if (this.isDirty) {
+                        this.saveData();
+                    }
+                }, this.autoSaveInterval);
+            }
+
+            clearDirty() {
+                this.isDirty = false;
+                document.body.classList.remove('data-dirty');
+            }
+
+            startAutoSave() {
+                this.autoSaveTimer = setTimeout(() => {
+                    if (this.isDirty) {
+                        this.saveData();
+                    }
+                }, this.autoSaveInterval);
+            }
+
+            showSaveIndicator() {
+                const indicator = document.getElementById('save-indicator');
+                indicator.classList.add('show');
+                setTimeout(() => {
+                    indicator.classList.remove('show');
+                }, 2000);
+            }
+
+            showAlert(type, message) {
+                const container = document.getElementById('alert-container');
+                const alert = document.createElement('div');
+                alert.className = `alert alert-${type}`;
+                alert.innerHTML = `
+                    <span>${this.getAlertIcon(type)}</span>
+                    <span>${message}</span>
+                `;
+                
+                container.appendChild(alert);
+                
+                // 3秒後に自動削除
+                setTimeout(() => {
+                    if (alert.parentNode) {
+                        alert.parentNode.removeChild(alert);
+                    }
+                }, 3000);
+            }
+
+            getAlertIcon(type) {
+                const icons = {
+                    success: '✅',
+                    error: '❌',
+                    warning: '⚠️'
+                };
+                return icons[type] || 'ℹ️';
+            }
+        }
+
+        // アプリケーション初期化
+        document.addEventListener('DOMContentLoaded', async () => {
+            window.youseiApp = new YouseiNotebook();
+            await window.youseiApp.init();
+            
+            console.log('🧁 洋生ノート v1.2が正常に起動しました');
+        });
+    </script>
+</body>
+</html>
