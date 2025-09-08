@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>店舗マスター管理 - 洋生ノートシステム</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .nav-back {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .nav-back:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+
+        .master-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+
+        .card h3 {
+            color: #333;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+        }
+
+        .store-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .store-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+
+        .store-item:hover {
+            background: #e9ecef;
+            border-color: #667eea;
+        }
+
+        .store-info {
+            flex: 1;
+        }
+
+        .store-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .store-details {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .store-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.9rem;
+        }
+
+        .settings-section {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-top: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+
+        .setting-label {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .setting-value {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        @media (max-width: 768px) {
+            .master-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal h3 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .close-modal:hover {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="nav-back">← ダッシュボードに戻る</a>
+        
+        <div class="header">
+            <h1>🏪 店舗マスター管理</h1>
+            <p>店舗情報の統合管理システム</p>
+        </div>
+
+        <div id="alertContainer"></div>
+
+        <div class="master-content">
+            <!-- 店舗追加・編集フォーム -->
+            <div class="card">
+                <h3>🏪 店舗情報</h3>
+                <form id="storeForm">
+                    <input type="hidden" id="editingStoreId" value="">
+                    
+                    <div class="form-group">
+                        <label for="storeId">店舗コード *</label>
+                        <input type="text" id="storeId" name="storeId" placeholder="例: KRB01" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="storeName">店舗名 *</label>
+                        <input type="text" id="storeName" name="storeName" placeholder="例: 本店" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="storeType">店舗種別</label>
+                        <select id="storeType" name="storeType">
+                            <option value="main">本店</option>
+                            <option value="branch">支店</option>
+                            <option value="outlet">アウトレット</option>
+                            <option value="mall">モール店</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="address">住所</label>
+                        <textarea id="address" name="address" rows="3" placeholder="店舗の所在地"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="phone">電話番号</label>
+                        <input type="tel" id="phone" name="phone" placeholder="例: 03-1234-5678">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="openTime">開店時間</label>
+                        <input type="time" id="openTime" name="openTime" value="09:00">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="closeTime">閉店時間</label>
+                        <input type="time" id="closeTime" name="closeTime" value="20:00">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="manager">店長</label>
+                        <input type="text" id="manager" name="manager" placeholder="店長名">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="salesTarget">月間売上目標</label>
+                        <input type="number" id="salesTarget" name="salesTarget" placeholder="3000000" min="0">
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px;">
+                        <button type="submit" class="btn btn-primary" id="submitBtn">登録</button>
+                        <button type="button" class="btn btn-secondary" onclick="resetForm()">リセット</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 店舗一覧 -->
+            <div class="card">
+                <h3>📋 店舗一覧</h3>
+                <div class="store-list" id="storeList">
+                    <!-- 店舗リストがここに動的に生成される -->
+                </div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn btn-primary" onclick="exportStoreData()">📤 店舗データ出力</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- システム設定 -->
+        <div class="settings-section">
+            <h3>⚙️ システム設定</h3>
+            <div class="settings-grid">
+                <div class="setting-item">
+                    <span class="setting-label">税率設定</span>
+                    <span class="setting-value">10%</span>
+                </div>
+                <div class="setting-item">
+                    <span class="setting-label">通貨単位</span>
+                    <span class="setting-value">JPY (¥)</span>
+                </div>
+                <div class="setting-item">
+                    <span class="setting-label">営業カレンダー</span>
+                    <span class="setting-value">日本標準</span>
+                </div>
+                <div class="setting-item">
+                    <span class="setting-label">データ同期間隔</span>
+                    <span class="setting-value">30分</span>
+                </div>
+                <div class="setting-item">
+                    <span class="setting-label">バックアップ頻度</span>
+                    <span class="setting-value">毎日</span>
+                </div>
+                <div class="setting-item">
+                    <span class="setting-label">ログ保持期間</span>
+                    <span class="setting-value">90日</span>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 30px;">
+                <button class="btn btn-primary" onclick="openSettingsModal()">設定変更</button>
+                <button class="btn btn-secondary" onclick="exportSettings()">設定エクスポート</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 設定変更モーダル -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeSettingsModal()">&times;</button>
+            <h3>システム設定変更</h3>
+            <form id="settingsForm">
+                <div class="form-group">
+                    <label for="taxRate">税率 (%)</label>
+                    <input type="number" id="taxRate" name="taxRate" value="10" min="0" max="100" step="0.1">
+                </div>
+                
+                <div class="form-group">
+                    <label for="syncInterval">データ同期間隔 (分)</label>
+                    <select id="syncInterval" name="syncInterval">
+                        <option value="15">15分</option>
+                        <option value="30" selected>30分</option>
+                        <option value="60">1時間</option>
+                        <option value="120">2時間</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="backupFrequency">バックアップ頻度</label>
+                    <select id="backupFrequency" name="backupFrequency">
+                        <option value="daily" selected>毎日</option>
+                        <option value="weekly">週1回</option>
+                        <option value="monthly">月1回</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="logRetention">ログ保持期間 (日)</label>
+                    <input type="number" id="logRetention" name="logRetention" value="90" min="1" max="365">
+                </div>
+                
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="closeSettingsModal()">キャンセル</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // 店舗データ管理
+        let stores = [
+            {
+                id: 'KRB01',
+                name: '本店',
+                type: 'main',
+                address: '東京都新宿区西新宿1-1-1',
+                phone: '03-1234-5678',
+                openTime: '09:00',
+                closeTime: '20:00',
+                manager: '田中太郎',
+                salesTarget: 3000000
+            },
+            {
+                id: 'KRB02',
+                name: '駅前店',
+                type: 'branch',
+                address: '東京都新宿区新宿3-1-1',
+                phone: '03-2345-6789',
+                openTime: '08:30',
+                closeTime: '21:00',
+                manager: '佐藤花子',
+                salesTarget: 2500000
+            },
+            {
+                id: 'KRB03',
+                name: 'イオン店',
+                type: 'mall',
+                address: '東京都江戸川区南篠崎町1-1-1',
+                phone: '03-3456-7890',
+                openTime: '10:00',
+                closeTime: '22:00',
+                manager: '鈴木一郎',
+                salesTarget: 2800000
+            },
+            {
+                id: 'KRB04',
+                name: 'アウトレット店',
+                type: 'outlet',
+                address: '千葉県木更津市金田東3-1-1',
+                phone: '0438-1234-567',
+                openTime: '10:00',
+                closeTime: '20:00',
+                manager: '山田美咲',
+                salesTarget: 2000000
+            }
+        ];
+
+        // ページ読み込み時の初期化
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStores();
+            loadSettings();
+        });
+
+        // 店舗一覧の表示
+        function loadStores() {
+            const storeList = document.getElementById('storeList');
+            storeList.innerHTML = '';
+            
+            stores.forEach(store => {
+                const storeItem = document.createElement('div');
+                storeItem.className = 'store-item';
+                storeItem.innerHTML = `
+                    <div class="store-info">
+                        <div class="store-name">${store.name} (${store.id})</div>
+                        <div class="store-details">
+                            種別: ${getStoreTypeName(store.type)} | 
+                            営業時間: ${store.openTime}-${store.closeTime} | 
+                            店長: ${store.manager || '未設定'}
+                        </div>
+                        <div class="store-details">
+                            月間売上目標: ¥${(store.salesTarget || 0).toLocaleString()}
+                        </div>
+                    </div>
+                    <div class="store-actions">
+                        <button class="btn btn-primary btn-small" onclick="editStore('${store.id}')">編集</button>
+                        <button class="btn btn-danger btn-small" onclick="deleteStore('${store.id}')">削除</button>
+                    </div>
+                `;
+                storeList.appendChild(storeItem);
+            });
+        }
+
+        // 店舗種別名の取得
+        function getStoreTypeName(type) {
+            const types = {
+                'main': '本店',
+                'branch': '支店',
+                'outlet': 'アウトレット',
+                'mall': 'モール店'
+            };
+            return types[type] || type;
+        }
+
+        // フォーム送信処理
+        document.getElementById('storeForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const storeData = {
+                id: formData.get('storeId'),
+                name: formData.get('storeName'),
+                type: formData.get('storeType'),
+                address: formData.get('address'),
+                phone: formData.get('phone'),
+                openTime: formData.get('openTime'),
+                closeTime: formData.get('closeTime'),
+                manager: formData.get('manager'),
+                salesTarget: parseInt(formData.get('salesTarget')) || 0
+            };
+
+            const editingId = document.getElementById('editingStoreId').value;
+            
+            if (editingId) {
+                // 編集モード
+                const index = stores.findIndex(s => s.id === editingId);
+                if (index !== -1) {
+                    stores[index] = storeData;
+                    showAlert('店舗情報を更新しました', 'success');
+                }
+            } else {
+                // 新規追加モード
+                if (stores.find(s => s.id === storeData.id)) {
+                    showAlert('既に存在する店舗コードです', 'error');
+                    return;
+                }
+                stores.push(storeData);
+                showAlert('新しい店舗を追加しました', 'success');
+            }
+            
+            loadStores();
+            resetForm();
+            saveStores();
+        });
+
+        // 店舗編集
+        function editStore(storeId) {
+            const store = stores.find(s => s.id === storeId);
+            if (!store) return;
+            
+            document.getElementById('editingStoreId').value = store.id;
+            document.getElementById('storeId').value = store.id;
+            document.getElementById('storeId').disabled = true;
+            document.getElementById('storeName').value = store.name;
+            document.getElementById('storeType').value = store.type;
+            document.getElementById('address').value = store.address || '';
+            document.getElementById('phone').value = store.phone || '';
+            document.getElementById('openTime').value = store.openTime;
+            document.getElementById('closeTime').value = store.closeTime;
+            document.getElementById('manager').value = store.manager || '';
+            document.getElementById('salesTarget').value = store.salesTarget || '';
+            
+            document.getElementById('submitBtn').textContent = '更新';
+            document.querySelector('.card h3').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // 店舗削除
+        function deleteStore(storeId) {
+            if (confirm('この店舗を削除してもよろしいですか？')) {
+                stores = stores.filter(s => s.id !== storeId);
+                loadStores();
+                saveStores();
+                showAlert('店舗を削除しました', 'success');
+            }
+        }
+
+        // フォームリセット
+        function resetForm() {
+            document.getElementById('storeForm').reset();
+            document.getElementById('editingStoreId').value = '';
+            document.getElementById('storeId').disabled = false;
+            document.getElementById('submitBtn').textContent = '登録';
+        }
+
+        // アラート表示
+        function showAlert(message, type = 'success') {
+            const alertContainer = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.innerHTML = `
+                <span>${type === 'success' ? '✅' : '❌'}</span>
+                <span>${message}</span>
+            `;
+            
+            alertContainer.innerHTML = '';
+            alertContainer.appendChild(alert);
+            
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
+        }
+
+        // 店舗データの保存
+        function saveStores() {
+            localStorage.setItem('storeData', JSON.stringify(stores));
+        }
+
+        // 店舗データの読み込み
+        function loadStoredData() {
+            const storedData = localStorage.getItem('storeData');
+            if (storedData) {
+                stores = JSON.parse(storedData);
+            }
+        }
+
+        // 設定の読み込み
+        function loadSettings() {
+            const settings = localStorage.getItem('systemSettings');
+            if (settings) {
+                const settingsData = JSON.parse(settings);
+                updateSettingsDisplay(settingsData);
+            }
+        }
+
+        // 設定表示の更新
+        function updateSettingsDisplay(settings) {
+            document.querySelector('.setting-value').textContent = `${settings.taxRate || 10}%`;
+        }
+
+        // 設定モーダルの開閉
+        function openSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'block';
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'none';
+        }
+
+        // 設定フォーム送信
+        document.getElementById('settingsForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const settings = {
+                taxRate: parseFloat(formData.get('taxRate')),
+                syncInterval: parseInt(formData.get('syncInterval')),
+                backupFrequency: formData.get('backupFrequency'),
+                logRetention: parseInt(formData.get('logRetention'))
+            };
+            
+            localStorage.setItem('systemSettings', JSON.stringify(settings));
+            updateSettingsDisplay(settings);
+            closeSettingsModal();
+            showAlert('システム設定を更新しました', 'success');
+        });
+
+        // データエクスポート
+        function exportStoreData() {
+            const csvData = [
+                ['店舗コード', '店舗名', '種別', '住所', '電話番号', '開店時間', '閉店時間', '店長', '月間売上目標']
+            ];
+            
+            stores.forEach(store => {
+                csvData.push([
+                    store.id,
+                    store.name,
+                    getStoreTypeName(store.type),
+                    store.address || '',
+                    store.phone || '',
+                    store.openTime,
+                    store.closeTime,
+                    store.manager || '',
+                    store.salesTarget || 0
+                ]);
+            });
+            
+            const csv = csvData.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `店舗マスター_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+            
+            showAlert('店舗データをエクスポートしました', 'success');
+        }
+
+        // 設定エクスポート
+        function exportSettings() {
+            const settings = localStorage.getItem('systemSettings') || '{}';
+            const blob = new Blob([settings], { type: 'application/json' });
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `システム設定_${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            
+            showAlert('システム設定をエクスポートしました', 'success');
+        }
+
+        // 初期データ読み込み
+        loadStoredData();
+    </script>
+</body>
+</html>

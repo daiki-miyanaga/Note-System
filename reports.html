@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分析レポート - 洋生ノートシステム</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .nav-back {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .nav-back:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+
+        .report-filters {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+
+        .report-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+
+        .card h3 {
+            color: #333;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chart-container {
+            height: 300px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .metric-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+        }
+
+        .metric-item {
+            text-align: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .table-container {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            border-radius: 8px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .data-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+
+        .data-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .trend-up {
+            color: #27ae60;
+        }
+
+        .trend-down {
+            color: #e74c3c;
+        }
+
+        .trend-neutral {
+            color: #666;
+        }
+
+        .export-section {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .export-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #667eea;
+            transition: width 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .filters-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .report-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .export-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="nav-back">← ダッシュボードに戻る</a>
+        
+        <div class="header">
+            <h1>📊 分析レポート</h1>
+            <p>売上・在庫・商品分析レポート</p>
+        </div>
+
+        <!-- フィルター設定 -->
+        <div class="report-filters">
+            <h3>🔍 レポート条件設定</h3>
+            <div class="filters-grid">
+                <div class="form-group">
+                    <label>期間開始</label>
+                    <input type="date" id="startDate" value="">
+                </div>
+                <div class="form-group">
+                    <label>期間終了</label>
+                    <input type="date" id="endDate" value="">
+                </div>
+                <div class="form-group">
+                    <label>店舗選択</label>
+                    <select id="storeFilter">
+                        <option value="all">全店舗</option>
+                        <option value="KRB01">本店</option>
+                        <option value="KRB02">駅前店</option>
+                        <option value="KRB03">イオン店</option>
+                        <option value="KRB04">アウトレット店</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>レポート種別</label>
+                    <select id="reportType">
+                        <option value="sales">売上分析</option>
+                        <option value="inventory">在庫分析</option>
+                        <option value="products">商品分析</option>
+                        <option value="trends">トレンド分析</option>
+                    </select>
+                </div>
+                <div class="form-group" style="justify-content: flex-end;">
+                    <button class="btn btn-primary" onclick="generateReport()">レポート生成</button>
+                </div>
+            </div>
+            <div class="alert alert-info" id="reportStatus" style="display: none;">
+                <span>ℹ️</span>
+                <span>レポートを生成しています...</span>
+            </div>
+        </div>
+
+        <!-- レポート表示エリア -->
+        <div class="report-grid" id="reportGrid">
+            <!-- サマリーカード -->
+            <div class="card">
+                <h3>📈 期間サマリー</h3>
+                <div class="metric-summary">
+                    <div class="metric-item">
+                        <div class="metric-value" id="totalSales">¥0</div>
+                        <div class="metric-label">総売上</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value" id="totalItems">0</div>
+                        <div class="metric-label">販売個数</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value" id="avgDaily">¥0</div>
+                        <div class="metric-label">日平均売上</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value" id="wastageRate">0%</div>
+                        <div class="metric-label">ロス率</div>
+                    </div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="targetProgress" style="width: 0%"></div>
+                </div>
+                <div style="text-align: center; margin-top: 10px; font-size: 0.9rem; color: #666;">
+                    目標達成率: <span id="targetRate">0%</span>
+                </div>
+            </div>
+
+            <!-- 売上トレンドチャート -->
+            <div class="card">
+                <h3>📊 売上トレンド</h3>
+                <div class="chart-container" id="salesChart">
+                    <div>📈 売上推移グラフ</div>
+                </div>
+                <div style="text-align: center;">
+                    <button class="btn btn-primary" onclick="toggleChartType()">グラフ切替</button>
+                </div>
+            </div>
+
+            <!-- 商品別売上ランキング -->
+            <div class="card">
+                <h3>🏆 商品別売上ランキング</h3>
+                <div class="table-container">
+                    <table class="data-table" id="productRanking">
+                        <thead>
+                            <tr>
+                                <th>順位</th>
+                                <th>商品名</th>
+                                <th>売上金額</th>
+                                <th>販売個数</th>
+                                <th>前期比</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- データが動的に生成される -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 店舗別パフォーマンス -->
+            <div class="card">
+                <h3>🏪 店舗別パフォーマンス</h3>
+                <div class="table-container">
+                    <table class="data-table" id="storePerformance">
+                        <thead>
+                            <tr>
+                                <th>店舗</th>
+                                <th>売上</th>
+                                <th>目標達成率</th>
+                                <th>ロス率</th>
+                                <th>評価</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- データが動的に生成される -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 在庫分析 -->
+            <div class="card">
+                <h3>📦 在庫分析</h3>
+                <div class="chart-container" id="inventoryChart">
+                    <div>📊 在庫回転率分析</div>
+                </div>
+                <div class="metric-summary">
+                    <div class="metric-item">
+                        <div class="metric-value" id="avgInventory">0</div>
+                        <div class="metric-label">平均在庫</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value" id="turnoverRate">0</div>
+                        <div class="metric-label">回転率</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 時間帯別売上 -->
+            <div class="card">
+                <h3>⏰ 時間帯別売上分析</h3>
+                <div class="chart-container" id="hourlyChart">
+                    <div>🕐 時間帯別売上パターン</div>
+                </div>
+                <div style="text-align: center; margin-top: 15px;">
+                    <div style="font-size: 0.9rem; color: #666;">
+                        ピーク時間: <strong id="peakHour">--:--</strong> | 
+                        最低売上時間: <strong id="lowHour">--:--</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- エクスポート機能 -->
+        <div class="export-section">
+            <h3>📤 レポート出力</h3>
+            <p>生成されたレポートを様々な形式で出力できます</p>
+            <div class="export-buttons">
+                <button class="btn btn-primary" onclick="exportPDF()">📄 PDF出力</button>
+                <button class="btn btn-primary" onclick="exportExcel()">📊 Excel出力</button>
+                <button class="btn btn-primary" onclick="exportCSV()">📋 CSV出力</button>
+                <button class="btn btn-primary" onclick="exportEmail()">📧 メール送信</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // サンプルデータ
+        const sampleData = {
+            sales: {
+                total: 2850000,
+                items: 12450,
+                dailyAvg: 95000,
+                wastage: 2.3,
+                targetRate: 94.8
+            },
+            productRanking: [
+                { rank: 1, name: "ショートケーキ", sales: 485000, quantity: 1154, trend: 12.3 },
+                { rank: 2, name: "チョコレートケーキ", sales: 420000, quantity: 840, trend: 8.7 },
+                { rank: 3, name: "カスタードプリン", sales: 380000, quantity: 950, trend: -2.1 },
+                { rank: 4, name: "フルーツタルト", sales: 345000, quantity: 690, trend: 15.6 },
+                { rank: 5, name: "チーズケーキ", sales: 298000, quantity: 596, trend: 5.4 }
+            ],
+            storePerformance: [
+                { store: "本店", sales: 890000, targetRate: 98.9, wastage: 1.8, rating: "優秀" },
+                { store: "駅前店", sales: 720000, targetRate: 96.4, wastage: 2.1, rating: "良好" },
+                { store: "イオン店", sales: 780000, targetRate: 92.1, wastage: 2.8, rating: "普通" },
+                { store: "アウトレット店", sales: 460000, targetRate: 88.7, wastage: 1.9, rating: "改善要" }
+            ]
+        };
+
+        // ページ初期化
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeDates();
+            generateReport();
+        });
+
+        // 初期日付設定
+        function initializeDates() {
+            const today = new Date();
+            const oneWeekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+            
+            document.getElementById('startDate').value = oneWeekAgo.toISOString().split('T')[0];
+            document.getElementById('endDate').value = today.toISOString().split('T')[0];
+        }
+
+        // レポート生成
+        function generateReport() {
+            const reportStatus = document.getElementById('reportStatus');
+            reportStatus.style.display = 'flex';
+            
+            setTimeout(() => {
+                updateSummary();
+                updateProductRanking();
+                updateStorePerformance();
+                updateCharts();
+                reportStatus.style.display = 'none';
+            }, 1500);
+        }
+
+        // サマリー更新
+        function updateSummary() {
+            const data = sampleData.sales;
+            
+            document.getElementById('totalSales').textContent = `¥${data.total.toLocaleString()}`;
+            document.getElementById('totalItems').textContent = data.items.toLocaleString();
+            document.getElementById('avgDaily').textContent = `¥${data.dailyAvg.toLocaleString()}`;
+            document.getElementById('wastageRate').textContent = `${data.wastage}%`;
+            document.getElementById('targetRate').textContent = `${data.targetRate}%`;
+            document.getElementById('targetProgress').style.width = `${data.targetRate}%`;
+        }
+
+        // 商品ランキング更新
+        function updateProductRanking() {
+            const tbody = document.querySelector('#productRanking tbody');
+            tbody.innerHTML = '';
+            
+            sampleData.productRanking.forEach(product => {
+                const row = document.createElement('tr');
+                const trendClass = product.trend > 0 ? 'trend-up' : product.trend < 0 ? 'trend-down' : 'trend-neutral';
+                const trendSymbol = product.trend > 0 ? '↗' : product.trend < 0 ? '↘' : '→';
+                
+                row.innerHTML = `
+                    <td>${product.rank}</td>
+                    <td>${product.name}</td>
+                    <td>¥${product.sales.toLocaleString()}</td>
+                    <td>${product.quantity.toLocaleString()}個</td>
+                    <td class="${trendClass}">${trendSymbol} ${Math.abs(product.trend)}%</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // 店舗パフォーマンス更新
+        function updateStorePerformance() {
+            const tbody = document.querySelector('#storePerformance tbody');
+            tbody.innerHTML = '';
+            
+            sampleData.storePerformance.forEach(store => {
+                const row = document.createElement('tr');
+                const ratingClass = store.rating === '優秀' ? 'trend-up' : 
+                                   store.rating === '改善要' ? 'trend-down' : 'trend-neutral';
+                
+                row.innerHTML = `
+                    <td>${store.store}</td>
+                    <td>¥${store.sales.toLocaleString()}</td>
+                    <td>${store.targetRate}%</td>
+                    <td>${store.wastage}%</td>
+                    <td class="${ratingClass}">${store.rating}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // チャート更新（簡易表示）
+        function updateCharts() {
+            // 実際の実装では Chart.js等を使用
+            document.getElementById('salesChart').innerHTML = `
+                <div>
+                    <div style="font-size: 1.2rem; margin-bottom: 10px;">📈 売上推移</div>
+                    <div style="font-size: 0.9rem; color: #666;">
+                        7日間の売上トレンド<br>
+                        平均日売上: ¥95,000<br>
+                        最高売上日: ¥125,000<br>
+                        最低売上日: ¥78,000
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('inventoryChart').innerHTML = `
+                <div>
+                    <div style="font-size: 1.2rem; margin-bottom: 10px;">📊 在庫分析</div>
+                    <div style="font-size: 0.9rem; color: #666;">
+                        平均在庫回転率: 8.5回<br>
+                        最適在庫レベル: 達成<br>
+                        過剰在庫商品: 2品目
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('hourlyChart').innerHTML = `
+                <div>
+                    <div style="font-size: 1.2rem; margin-bottom: 10px;">⏰ 時間帯分析</div>
+                    <div style="font-size: 0.9rem; color: #666;">
+                        ピーク: 14:00-16:00<br>
+                        売上集中度: 32%<br>
+                        営業効率: 良好
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('peakHour').textContent = '14:00-16:00';
+            document.getElementById('lowHour').textContent = '10:00-11:00';
+            document.getElementById('avgInventory').textContent = '1,250';
+            document.getElementById('turnoverRate').textContent = '8.5';
+        }
+
+        // チャート種別切替
+        function toggleChartType() {
+            const chartTypes = ['売上推移', '前年比較', '目標対比', '店舗比較'];
+            const currentIndex = Math.floor(Math.random() * chartTypes.length);
+            const chartType = chartTypes[currentIndex];
+            
+            document.getElementById('salesChart').innerHTML = `
+                <div>
+                    <div style="font-size: 1.2rem; margin-bottom: 10px;">📊 ${chartType}</div>
+                    <div style="font-size: 0.9rem; color: #666;">
+                        表示タイプ: ${chartType}<br>
+                        データ期間: 7日間<br>
+                        更新日時: ${new Date().toLocaleString('ja-JP')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // エクスポート機能
+        function exportPDF() {
+            alert('PDFレポートを生成中...\n生成完了後、ダウンロードが開始されます。');
+            // 実際の実装では jsPDF等を使用
+        }
+
+        function exportExcel() {
+            alert('Excelファイルを生成中...\n生成完了後、ダウンロードが開始されます。');
+            // 実際の実装では SheetJS等を使用
+        }
+
+        function exportCSV() {
+            // サンプルCSV出力
+            const csvData = [
+                ['レポート種別', '期間', '総売上', '販売個数', 'ロス率'],
+                ['売上分析', '2024-01-01 ~ 2024-01-07', '2,850,000', '12,450', '2.3%']
+            ];
+            
+            const csv = csvData.map(row => row.join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `売上レポート_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+        }
+
+        function exportEmail() {
+            const subject = encodeURIComponent('売上レポート - ' + new Date().toLocaleDateString('ja-JP'));
+            const body = encodeURIComponent(`
+売上レポートをお送りします。
+
+期間: ${document.getElementById('startDate').value} ～ ${document.getElementById('endDate').value}
+総売上: ¥2,850,000
+販売個数: 12,450個
+ロス率: 2.3%
+
+詳細は添付のレポートをご確認ください。
+            `);
+            
+            window.open(`mailto:?subject=${subject}&body=${body}`);
+        }
+    </script>
+</body>
+</html>
