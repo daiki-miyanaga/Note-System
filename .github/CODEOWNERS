@@ -1,0 +1,9 @@
+# デフォルトのコードオーナー（レビューリクエスト自動付与）
+* @daiki-miyanaga
+
+# ドキュメント全般
+*.md @daiki-miyanaga
+
+# GitHub関連（ワークフロー/テンプレート）
+.github/* @daiki-miyanaga
+
