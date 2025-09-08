@@ -982,7 +982,7 @@
         class YouseiNotebook {
             constructor() {
                 this.data = [];
-                this.masterData = this.initMasterData();
+                this.masterData = null; // Will be initialized in init()
                 this.isDirty = false;
                 this.autoSaveTimer = null;
                 this.autoSaveInterval = 30000; // 30秒
