@@ -1920,11 +1920,14 @@
                 showValidationWarnings();
                 applyCellValidation();
                 
+                alert('構成比の変更を保存しました！');
+                
             } else if (editingData.type === 'product') {
                 // 個別商品の変更を保存
                 const ratioInput = document.getElementById('productRatio');
                 if (ratioInput) {
                     updateProductRatio(editingData.date, editingData.productCode, ratioInput.value);
+                    alert('商品設定の変更を保存しました！');
                 }
                 
                 // バリデーション更新

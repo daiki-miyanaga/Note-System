@@ -722,7 +722,8 @@
         }
     </style>
     
-    <!-- Google Drive Storage Scripts -->
+    <!-- Base Configuration and Storage Scripts -->
+    <script src="base-config.js"></script>
     <script src="gdrive-storage.js"></script>
     <script src="gdrive-config.js"></script>
     <script src="gas-storage.js"></script>
@@ -1001,10 +1002,29 @@
                     }
                     
                     if (savedMasterData) {
-                        if (typeof savedMasterData === 'string') {
-                            return JSON.parse(savedMasterData);
+                        const masterData = typeof savedMasterData === 'string' 
+                            ? JSON.parse(savedMasterData) 
+                            : savedMasterData;
+                        
+                        // 店舗マスタシステムからのデータをマージ
+                        const externalStoreData = localStorage.getItem('storeData');
+                        if (externalStoreData) {
+                            const externalStores = JSON.parse(externalStoreData);
+                            // 外部の店舗データをマージ
+                            externalStores.forEach(extStore => {
+                                const existingStore = masterData.stores.find(s => s.storeId === extStore.id);
+                                if (!existingStore) {
+                                    masterData.stores.push({
+                                        storeId: extStore.id,
+                                        name: extStore.name,
+                                        closingTime: extStore.closingTime,
+                                        holidayCalendarId: 'default'
+                                    });
+                                }
+                            });
                         }
-                        return savedMasterData;
+                        
+                        return masterData;
                     }
                 } catch (error) {
                     console.error('マスタデータ読み込みエラー:', error);
@@ -1024,6 +1044,27 @@
                     ],
                     holidays: []
                 };
+                
+                // 店舗マスタシステムからの初期データも取り込み
+                try {
+                    const externalStoreData = localStorage.getItem('storeData');
+                    if (externalStoreData) {
+                        const externalStores = JSON.parse(externalStoreData);
+                        externalStores.forEach(extStore => {
+                            const existingStore = defaultMasterData.stores.find(s => s.storeId === extStore.id);
+                            if (!existingStore) {
+                                defaultMasterData.stores.push({
+                                    storeId: extStore.id,
+                                    name: extStore.name,
+                                    closingTime: extStore.closingTime,
+                                    holidayCalendarId: 'default'
+                                });
+                            }
+                        });
+                    }
+                } catch (error) {
+                    console.error('外部店舗データ読み込みエラー:', error);
+                }
                 
                 // 初期マスタデータを保存
                 await this.saveMasterData(defaultMasterData);
@@ -2090,6 +2131,9 @@
                     // マスタデータを保存
                     await this.saveMasterData(this.masterData);
                     
+                    // 店舗マスタシステムにも保存
+                    this.syncToStoreMaster(newStore);
+                    
                     // 店舗選択欄を更新
                     this.loadStoreOptions();
                     
@@ -2130,6 +2174,42 @@
                 } catch (error) {
                     console.error('店舗削除エラー:', error);
                     this.showAlert('error', '店舗の削除に失敗しました');
+                }
+            }
+
+            // 店舗マスタシステムと同期
+            syncToStoreMaster(store) {
+                try {
+                    const externalStoreData = localStorage.getItem('storeData');
+                    let externalStores = externalStoreData ? JSON.parse(externalStoreData) : [];
+                    
+                    // 重複チェック
+                    const existingIndex = externalStores.findIndex(s => s.id === store.storeId);
+                    
+                    const storeMasterFormat = {
+                        id: store.storeId,
+                        name: store.name,
+                        closingTime: store.closingTime,
+                        address: '',
+                        phone: '',
+                        manager: '',
+                        status: 'active',
+                        createdAt: new Date().toISOString()
+                    };
+                    
+                    if (existingIndex >= 0) {
+                        // 既存データを更新
+                        externalStores[existingIndex] = { ...externalStores[existingIndex], ...storeMasterFormat };
+                    } else {
+                        // 新規追加
+                        externalStores.push(storeMasterFormat);
+                    }
+                    
+                    localStorage.setItem('storeData', JSON.stringify(externalStores));
+                    console.log('店舗マスタシステムに同期しました:', store.storeId);
+                    
+                } catch (error) {
+                    console.error('店舗マスタ同期エラー:', error);
                 }
             }
 
