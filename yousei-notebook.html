@@ -757,8 +757,11 @@
                     <div class="info-item">
                         <label>店舗</label>
                         <select id="store">
-                            <option value="KRB01">KRB01</option>
+                            <!-- 店舗は動的に読み込み -->
                         </select>
+                    </div>
+                    <div class="info-item">
+                        <button id="store-master-btn" class="btn btn-secondary">🏪 店舗マスタ</button>
                     </div>
                 </div>
             </div>
@@ -818,8 +821,7 @@
             <!-- Toolbar Section -->
             <section class="toolbar-section">
                 <div class="toolbar">
-                    <button id="add-row-btn" class="btn btn-secondary">➕ 行追加</button>
-                    <button id="master-register-btn" class="btn btn-secondary">📋 商品マスタ登録</button>
+                    <button id="master-register-btn" class="btn btn-secondary">➕ 商品追加</button>
                     <button id="recalculate-btn" class="btn btn-secondary">🧮 再計算</button>
                     <button id="save-btn" class="btn btn-primary">💾 保存</button>
                     <button id="export-csv-btn" class="btn btn-secondary">📤 CSV出力</button>
@@ -849,6 +851,7 @@
                     <table class="main-table">
                         <thead>
                             <tr>
+                                <th>商品コード</th>
                                 <th>商品名</th>
                                 <th>単価(税抜)</th>
                                 <th>入荷</th>
@@ -926,6 +929,43 @@
         </div>
     </div>
 
+    <!-- 店舗マスタ管理モーダル -->
+    <div id="store-master-modal" class="modal" style="display: none;">
+        <div class="modal-content" style="width: 600px;">
+            <span class="close" id="store-close">&times;</span>
+            <h2>店舗マスタ管理</h2>
+            
+            <!-- 店舗リスト -->
+            <div style="margin-bottom: 20px;">
+                <h3>登録済み店舗</h3>
+                <div id="store-list" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px;">
+                    <!-- 店舗リストが動的に挿入される -->
+                </div>
+            </div>
+            
+            <!-- 新規店舗登録 -->
+            <form id="store-form">
+                <h3>新規店舗登録</h3>
+                <div class="form-group">
+                    <label for="store-id">店舗ID:</label>
+                    <input type="text" id="store-id" required placeholder="例: KRB01">
+                </div>
+                <div class="form-group">
+                    <label for="store-name">店舗名:</label>
+                    <input type="text" id="store-name" required placeholder="例: 倉敷店">
+                </div>
+                <div class="form-group">
+                    <label for="store-closing-time">閉店時間:</label>
+                    <input type="time" id="store-closing-time" value="20:00" required>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">店舗追加</button>
+                    <button type="button" id="store-cancel-btn" class="btn btn-secondary">キャンセル</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         // 洋生ノート v1.2 メインアプリケーション
         class YouseiNotebook {
@@ -974,6 +1014,7 @@
             async init() {
                 try {
                     this.initializeDateFields();
+                    this.loadStoreOptions();
                     this.loadData();
                     this.renderTable();
                     this.updateSummary();
@@ -996,6 +1037,23 @@
                 
                 document.getElementById('target-date').value = dateStr;
                 document.getElementById('day-of-week').value = dayOfWeek + '曜日';
+            }
+
+            loadStoreOptions() {
+                const storeSelect = document.getElementById('store');
+                storeSelect.innerHTML = '';
+                
+                this.masterData.stores.forEach(store => {
+                    const option = document.createElement('option');
+                    option.value = store.storeId;
+                    option.textContent = `${store.storeId} - ${store.name}`;
+                    storeSelect.appendChild(option);
+                });
+                
+                // 最初の店舗を選択
+                if (this.masterData.stores.length > 0) {
+                    storeSelect.value = this.masterData.stores[0].storeId;
+                }
             }
 
             loadData() {
@@ -1084,6 +1142,7 @@
                 row.setAttribute('data-id', item.id);
                 
                 row.innerHTML = `
+                    <td><input type="text" class="table-input" data-field="code" value="${item.code || ''}" placeholder="商品コード" data-code-input="true"></td>
                     <td><input type="text" class="table-input" data-field="name" value="${item.name || ''}" readonly></td>
                     <td>¥${this.formatNumber(item.priceEx || 0)}</td>
                     <td><input type="number" class="table-input" data-field="arrival" value="${item.arrival || 0}" min="0" step="1" data-popup-trigger="true" title="修正モード時にフォーカスすると参照データが表示されます"></td>
@@ -1380,6 +1439,13 @@
                     }
                 });
 
+                // 商品コード入力時の自動入力
+                document.addEventListener('blur', (e) => {
+                    if (e.target.hasAttribute('data-code-input')) {
+                        this.handleCodeInput(e.target);
+                    }
+                });
+
                 // 発注項目フォーカス時にポップアップ表示
                 document.addEventListener('focus', (e) => {
                     if (e.target.hasAttribute('data-popup-trigger')) {
@@ -1395,10 +1461,6 @@
                 }, true);
 
                 // ボタン
-                document.getElementById('add-row-btn').addEventListener('click', () => {
-                    this.addRow();
-                });
-
                 document.getElementById('recalculate-btn').addEventListener('click', () => {
                     this.recalculateAll();
                 });
@@ -1416,13 +1478,25 @@
                     this.openMasterModal();
                 });
 
+                document.getElementById('store-master-btn').addEventListener('click', () => {
+                    this.openStoreMasterModal();
+                });
+
                 // モーダル関連イベント
                 document.querySelector('.close').addEventListener('click', () => {
                     this.closeMasterModal();
                 });
 
+                document.getElementById('store-close').addEventListener('click', () => {
+                    this.closeStoreMasterModal();
+                });
+
                 document.getElementById('cancel-btn').addEventListener('click', () => {
                     this.closeMasterModal();
+                });
+
+                document.getElementById('store-cancel-btn').addEventListener('click', () => {
+                    this.closeStoreMasterModal();
                 });
 
                 document.getElementById('master-form').addEventListener('submit', (e) => {
@@ -1430,10 +1504,21 @@
                     this.registerProduct();
                 });
 
+                document.getElementById('store-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.registerStore();
+                });
+
                 // モーダル外クリックで閉じる
                 document.getElementById('master-modal').addEventListener('click', (e) => {
                     if (e.target === document.getElementById('master-modal')) {
                         this.closeMasterModal();
+                    }
+                });
+
+                document.getElementById('store-master-modal').addEventListener('click', (e) => {
+                    if (e.target === document.getElementById('store-master-modal')) {
+                        this.closeStoreMasterModal();
                     }
                 });
 
@@ -1496,6 +1581,42 @@
                 } catch (error) {
                     console.error('入力処理エラー:', error);
                     this.showAlert('error', 'データの更新に失敗しました');
+                }
+            }
+
+            handleCodeInput(input) {
+                try {
+                    const code = input.value.trim();
+                    if (!code) return;
+
+                    const row = input.closest('tr');
+                    const itemId = row.getAttribute('data-id');
+                    const item = this.data.find(item => item.id === itemId);
+                    if (!item) return;
+
+                    // マスタデータから商品情報を検索
+                    const masterProduct = this.masterData.products.find(p => p.code === code);
+                    if (masterProduct) {
+                        // 商品情報を自動入力
+                        item.code = masterProduct.code;
+                        item.name = masterProduct.name;
+                        item.priceEx = masterProduct.priceEx;
+                        item.orderUnit = masterProduct.orderUnit;
+                        item.shelfLifeDays = masterProduct.shelfLifeDays;
+
+                        // 行全体を再描画
+                        this.renderTable();
+                        this.updateSummary();
+                        this.markDirty();
+                        
+                        this.showAlert('success', `商品情報「${masterProduct.name}」を自動入力しました`);
+                    } else {
+                        this.showAlert('warning', `商品コード「${code}」がマスタに見つかりません`);
+                    }
+
+                } catch (error) {
+                    console.error('商品コード入力処理エラー:', error);
+                    this.showAlert('error', '商品コードの処理に失敗しました');
                 }
             }
 
@@ -1567,10 +1688,6 @@
                 calculatedValues[1].textContent = `¥${this.formatNumber(item.revenueEx || 0)}`; // 売上金額
             }
 
-            addRow() {
-                // Open master registration modal instead of adding empty row
-                this.openMasterModal();
-            }
 
             deleteRow(itemId) {
                 if (confirm('この行を削除しますか？')) {
@@ -1774,6 +1891,116 @@
             closeMasterModal() {
                 document.getElementById('master-modal').style.display = 'none';
                 document.getElementById('master-form').reset();
+            }
+
+            // 店舗マスタ管理関連メソッド
+            openStoreMasterModal() {
+                this.renderStoreList();
+                document.getElementById('store-master-modal').style.display = 'flex';
+                document.getElementById('store-id').focus();
+            }
+
+            closeStoreMasterModal() {
+                document.getElementById('store-master-modal').style.display = 'none';
+                document.getElementById('store-form').reset();
+            }
+
+            renderStoreList() {
+                const storeList = document.getElementById('store-list');
+                storeList.innerHTML = '';
+
+                if (this.masterData.stores.length === 0) {
+                    storeList.innerHTML = '<p>登録済み店舗がありません</p>';
+                    return;
+                }
+
+                this.masterData.stores.forEach(store => {
+                    const storeItem = document.createElement('div');
+                    storeItem.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #eee;';
+                    storeItem.innerHTML = `
+                        <div>
+                            <strong>${store.storeId}</strong> - ${store.name}
+                            <br><small>閉店: ${store.closingTime}</small>
+                        </div>
+                        <button class="btn btn-warning" onclick="youseiApp.deleteStore('${store.storeId}')" style="padding: 4px 8px; font-size: 12px;">削除</button>
+                    `;
+                    storeList.appendChild(storeItem);
+                });
+            }
+
+            registerStore() {
+                try {
+                    const storeId = document.getElementById('store-id').value.trim();
+                    const name = document.getElementById('store-name').value.trim();
+                    const closingTime = document.getElementById('store-closing-time').value;
+
+                    // バリデーション
+                    if (!storeId || !name) {
+                        this.showAlert('error', '店舗IDと店舗名は必須です');
+                        return;
+                    }
+
+                    // 重複チェック
+                    const existingStore = this.masterData.stores.find(s => s.storeId === storeId);
+                    if (existingStore) {
+                        this.showAlert('error', '同じ店舗IDが既に存在します');
+                        return;
+                    }
+
+                    // 新しい店舗を追加
+                    const newStore = {
+                        storeId: storeId,
+                        name: name,
+                        closingTime: closingTime,
+                        holidayCalendarId: 'default'
+                    };
+                    
+                    this.masterData.stores.push(newStore);
+                    
+                    // マスタデータを保存
+                    localStorage.setItem('yousei:masterData', JSON.stringify(this.masterData));
+                    
+                    // 店舗選択欄を更新
+                    this.loadStoreOptions();
+                    
+                    // 店舗リストを更新
+                    this.renderStoreList();
+                    
+                    // フォームをリセット
+                    document.getElementById('store-form').reset();
+                    
+                    this.showAlert('success', `店舗「${name}」を追加しました`);
+                    
+                } catch (error) {
+                    console.error('店舗登録エラー:', error);
+                    this.showAlert('error', '店舗の登録に失敗しました');
+                }
+            }
+
+            deleteStore(storeId) {
+                if (!confirm(`店舗「${storeId}」を削除しますか？`)) {
+                    return;
+                }
+
+                try {
+                    // 店舗を削除
+                    this.masterData.stores = this.masterData.stores.filter(store => store.storeId !== storeId);
+                    
+                    // マスタデータを保存
+                    localStorage.setItem('yousei:masterData', JSON.stringify(this.masterData));
+                    
+                    // 店舗選択欄を更新
+                    this.loadStoreOptions();
+                    
+                    // 店舗リストを更新
+                    this.renderStoreList();
+                    
+                    this.showAlert('success', `店舗「${storeId}」を削除しました`);
+                    
+                } catch (error) {
+                    console.error('店舗削除エラー:', error);
+                    this.showAlert('error', '店舗の削除に失敗しました');
+                }
             }
 
             registerProduct() {
