@@ -721,6 +721,10 @@
             margin-top: var(--spacing-lg);
         }
     </style>
+    
+    <!-- Google Drive Storage Scripts -->
+    <script src="gdrive-storage.js"></script>
+    <script src="gdrive-config.js"></script>
 </head>
 <body>
     <!-- Header -->
@@ -762,6 +766,9 @@
                     </div>
                     <div class="info-item">
                         <button id="store-master-btn" class="btn btn-secondary">🏪 店舗マスタ</button>
+                    </div>
+                    <div class="info-item">
+                        <a href="index.html" class="btn btn-secondary">🏠 メインに戻る</a>
                     </div>
                 </div>
             </div>
@@ -825,6 +832,7 @@
                     <button id="recalculate-btn" class="btn btn-secondary">🧮 再計算</button>
                     <button id="save-btn" class="btn btn-primary">💾 保存</button>
                     <button id="export-csv-btn" class="btn btn-secondary">📤 CSV出力</button>
+                    <button id="gdrive-config-btn" class="btn btn-secondary">☁️ GDrive設定</button>
                     
                     <div style="display: flex; align-items: center; gap: var(--spacing-sm);">
                         <span>修正モード</span>
@@ -980,15 +988,24 @@
             }
 
             // マスタデータ初期化
-            initMasterData() {
-                // ローカルストレージから既存のマスタデータを読み込み
-                const savedMasterData = localStorage.getItem('yousei:masterData');
-                if (savedMasterData) {
-                    try {
-                        return JSON.parse(savedMasterData);
-                    } catch (error) {
-                        console.error('マスタデータ読み込みエラー:', error);
+            async initMasterData() {
+                // Google Drive またはローカルストレージから既存のマスタデータを読み込み
+                try {
+                    let savedMasterData;
+                    if (window.gdriveStorage && window.gdriveStorage.isConnected()) {
+                        savedMasterData = await window.gdriveStorage.getItem('yousei:masterData');
+                    } else {
+                        savedMasterData = localStorage.getItem('yousei:masterData');
                     }
+                    
+                    if (savedMasterData) {
+                        if (typeof savedMasterData === 'string') {
+                            return JSON.parse(savedMasterData);
+                        }
+                        return savedMasterData;
+                    }
+                } catch (error) {
+                    console.error('マスタデータ読み込みエラー:', error);
                 }
                 
                 // 初期マスタデータ
@@ -1006,18 +1023,24 @@
                     holidays: []
                 };
                 
-                // 初期マスタデータをローカルストレージに保存
-                localStorage.setItem('yousei:masterData', JSON.stringify(defaultMasterData));
+                // 初期マスタデータを保存
+                await this.saveMasterData(defaultMasterData);
                 return defaultMasterData;
             }
 
             async init() {
                 try {
+                    // Google Drive 自動初期化
+                    if (window.gdriveConfig) {
+                        await window.gdriveConfig.autoInit();
+                    }
+                    
                     this.initializeDateFields();
+                    this.masterData = await this.initMasterData();
                     this.loadStoreOptions();
-                    this.loadData();
+                    await this.loadData();
                     this.renderTable();
-                    this.updateSummary();
+                    await this.updateSummary();
                     this.attachEventListeners();
                     this.startAutoSave();
                     
@@ -1026,6 +1049,19 @@
                 } catch (error) {
                     console.error('初期化エラー:', error);
                     this.showAlert('error', '洋生ノートの初期化に失敗しました');
+                }
+            }
+
+            // マスタデータ保存
+            async saveMasterData(data) {
+                try {
+                    if (window.gdriveStorage && window.gdriveStorage.isConnected()) {
+                        await window.gdriveStorage.setItem('yousei:masterData', data);
+                    } else {
+                        localStorage.setItem('yousei:masterData', JSON.stringify(data));
+                    }
+                } catch (error) {
+                    console.error('マスタデータ保存エラー:', error);
                 }
             }
 
@@ -1056,13 +1092,21 @@
                 }
             }
 
-            loadData() {
+            async loadData() {
                 try {
                     const targetDate = document.getElementById('target-date').value;
                     const storeId = document.getElementById('store').value;
                     const key = `yousei:${storeId}:${targetDate}`;
                     
-                    const savedData = localStorage.getItem(key);
+                    let savedData;
+                    if (window.gdriveStorage && window.gdriveStorage.isConnected()) {
+                        savedData = await window.gdriveStorage.getItem(key);
+                        if (savedData && typeof savedData === 'object') {
+                            savedData = JSON.stringify(savedData);
+                        }
+                    } else {
+                        savedData = localStorage.getItem(key);
+                    }
                     if (savedData) {
                         const parsed = JSON.parse(savedData);
                         this.data = parsed.details || [];
@@ -1092,7 +1136,7 @@
                     }
                     
                     // 前日持越しデータを自動反映
-                    this.loadPreviousDayCarryover(targetDate, storeId);
+                    await this.loadPreviousDayCarryover(targetDate, storeId);
                     
                 } catch (error) {
                     console.error('データ読み込みエラー:', error);
@@ -1100,7 +1144,7 @@
                 }
             }
 
-            saveData() {
+            async saveData() {
                 try {
                     const targetDate = document.getElementById('target-date').value;
                     const storeId = document.getElementById('store').value;
@@ -1116,7 +1160,11 @@
                         details: this.data
                     };
                     
-                    localStorage.setItem(key, JSON.stringify(saveData));
+                    if (window.gdriveStorage && window.gdriveStorage.isConnected()) {
+                        await window.gdriveStorage.setItem(key, saveData);
+                    } else {
+                        localStorage.setItem(key, JSON.stringify(saveData));
+                    }
                     
                     this.clearDirty();
                     this.showSaveIndicator();
@@ -1362,7 +1410,7 @@
                 }
             }
 
-            updateSummary() {
+            async updateSummary() {
                 try {
                     const itemCount = this.data.length;
                     const totalArrival = this.data.reduce((sum, item) => sum + (parseFloat(item.arrival) || 0), 0);
@@ -1382,7 +1430,7 @@
                     const d2BudgetAmount = this.data.reduce((sum, item) => sum + (item.budget_d2.amountEx || 0), 0);
 
                     // 前年同日の売上データを取得
-                    const prevYearData = this.getPreviousYearData();
+                    const prevYearData = await this.getPreviousYearData();
                     const yearOverYear = this.calculateYearOverYear(totalRevenue, prevYearData.totalRevenue);
 
                     document.getElementById('item-count').textContent = `${itemCount}品`;
@@ -1403,14 +1451,14 @@
 
             attachEventListeners() {
                 // 日付変更
-                document.getElementById('target-date').addEventListener('change', (e) => {
+                document.getElementById('target-date').addEventListener('change', async (e) => {
                     const date = new Date(e.target.value);
                     const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
                     const dayOfWeek = dayNames[date.getDay()];
                     document.getElementById('day-of-week').value = dayOfWeek + '曜日';
-                    this.loadData(); // 日付変更時はデータを再読み込み
+                    await this.loadData(); // 日付変更時はデータを再読み込み
                     this.renderTable();
-                    this.updateSummary();
+                    await this.updateSummary();
                 });
 
                 // 天気・気温・店舗変更
@@ -1461,12 +1509,12 @@
                 }, true);
 
                 // ボタン
-                document.getElementById('recalculate-btn').addEventListener('click', () => {
-                    this.recalculateAll();
+                document.getElementById('recalculate-btn').addEventListener('click', async () => {
+                    await this.recalculateAll();
                 });
 
-                document.getElementById('save-btn').addEventListener('click', () => {
-                    this.saveData();
+                document.getElementById('save-btn').addEventListener('click', async () => {
+                    await this.saveData();
                     this.showAlert('success', 'データを保存しました');
                 });
 
@@ -1480,6 +1528,14 @@
 
                 document.getElementById('store-master-btn').addEventListener('click', () => {
                     this.openStoreMasterModal();
+                });
+
+                document.getElementById('gdrive-config-btn').addEventListener('click', () => {
+                    if (window.gdriveConfig) {
+                        window.gdriveConfig.createConfigUI();
+                    } else {
+                        this.showAlert('error', 'Google Drive 設定が利用できません');
+                    }
                 });
 
                 // モーダル関連イベント
@@ -1523,10 +1579,10 @@
                 });
 
                 // キーボードショートカット
-                document.addEventListener('keydown', (e) => {
+                document.addEventListener('keydown', async (e) => {
                     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                         e.preventDefault();
-                        this.saveData();
+                        await this.saveData();
                         this.showAlert('success', 'データを保存しました');
                     }
                     if (e.key === 'Escape') {
@@ -1545,7 +1601,7 @@
                 });
             }
 
-            handleInputChange(input) {
+            async handleInputChange(input) {
                 try {
                     const row = input.closest('tr');
                     const itemId = row.getAttribute('data-id');
@@ -1574,7 +1630,7 @@
                     this.updateRowDisplay(row, item);
                     
                     // サマリー更新
-                    this.updateSummary();
+                    await this.updateSummary();
                     
                     this.markDirty();
 
@@ -1606,7 +1662,7 @@
 
                         // 行全体を再描画
                         this.renderTable();
-                        this.updateSummary();
+                        await this.updateSummary();
                         this.markDirty();
                         
                         this.showAlert('success', `商品情報「${masterProduct.name}」を自動入力しました`);
@@ -1620,7 +1676,7 @@
                 }
             }
 
-            handleBudgetInputChange(input) {
+            async handleBudgetInputChange(input) {
                 try {
                     const field = input.getAttribute('data-field');
                     const value = parseFloat(input.value) || 0;
@@ -1636,7 +1692,7 @@
                         item.budget_d2.qty = item.priceEx > 0 ? Math.round(value / item.priceEx) : 0;
                     }
                     
-                    this.updateSummary();
+                    await this.updateSummary();
                     this.markDirty();
 
                 } catch (error) {
@@ -1693,18 +1749,18 @@
                 if (confirm('この行を削除しますか？')) {
                     this.data = this.data.filter(item => item.id !== itemId);
                     this.renderTable();
-                    this.updateSummary();
+                    await this.updateSummary();
                     this.markDirty();
                     this.showAlert('success', '行を削除しました');
                 }
             }
 
-            recalculateAll() {
+            async recalculateAll() {
                 this.data.forEach(item => {
                     this.performCalculations(item);
                 });
                 this.renderTable();
-                this.updateSummary();
+                await this.updateSummary();
                 this.showAlert('success', '全ての計算を再実行しました');
             }
 
@@ -1793,9 +1849,9 @@
                     clearTimeout(this.autoSaveTimer);
                 }
                 
-                this.autoSaveTimer = setTimeout(() => {
+                this.autoSaveTimer = setTimeout(async () => {
                     if (this.isDirty) {
-                        this.saveData();
+                        await this.saveData();
                     }
                 }, this.autoSaveInterval);
             }
@@ -1806,9 +1862,9 @@
             }
 
             startAutoSave() {
-                this.autoSaveTimer = setTimeout(() => {
+                this.autoSaveTimer = setTimeout(async () => {
                     if (this.isDirty) {
-                        this.saveData();
+                        await this.saveData();
                     }
                 }, this.autoSaveInterval);
             }
@@ -1850,7 +1906,7 @@
             }
 
             // 前日持越しデータの自動反映
-            loadPreviousDayCarryover(targetDate, storeId) {
+            async loadPreviousDayCarryover(targetDate, storeId) {
                 try {
                     const target = new Date(targetDate);
                     const prevDay = new Date(target);
@@ -1858,7 +1914,15 @@
                     const prevDateStr = prevDay.toISOString().slice(0, 10);
                     
                     const prevKey = `yousei:${storeId}:${prevDateStr}`;
-                    const prevData = localStorage.getItem(prevKey);
+                    let prevData;
+                    if (window.gdriveStorage && window.gdriveStorage.isConnected()) {
+                        prevData = await window.gdriveStorage.getItem(prevKey);
+                        if (prevData && typeof prevData === 'object') {
+                            prevData = JSON.stringify(prevData);
+                        }
+                    } else {
+                        prevData = localStorage.getItem(prevKey);
+                    }
                     
                     if (prevData) {
                         const parsed = JSON.parse(prevData);
@@ -1928,7 +1992,7 @@
                 });
             }
 
-            registerStore() {
+            async registerStore() {
                 try {
                     const storeId = document.getElementById('store-id').value.trim();
                     const name = document.getElementById('store-name').value.trim();
@@ -1958,7 +2022,7 @@
                     this.masterData.stores.push(newStore);
                     
                     // マスタデータを保存
-                    localStorage.setItem('yousei:masterData', JSON.stringify(this.masterData));
+                    await this.saveMasterData(this.masterData);
                     
                     // 店舗選択欄を更新
                     this.loadStoreOptions();
@@ -1987,7 +2051,7 @@
                     this.masterData.stores = this.masterData.stores.filter(store => store.storeId !== storeId);
                     
                     // マスタデータを保存
-                    localStorage.setItem('yousei:masterData', JSON.stringify(this.masterData));
+                    await this.saveMasterData(this.masterData);
                     
                     // 店舗選択欄を更新
                     this.loadStoreOptions();
@@ -2003,7 +2067,7 @@
                 }
             }
 
-            registerProduct() {
+            async registerProduct() {
                 try {
                     const code = document.getElementById('product-code').value.trim();
                     const name = document.getElementById('product-name').value.trim();
@@ -2062,12 +2126,12 @@
                     
                     this.data.push(newItem);
                     
-                    // マスタデータをローカルストレージに保存
-                    localStorage.setItem('yousei:masterData', JSON.stringify(this.masterData));
+                    // マスタデータを保存
+                    await this.saveMasterData(this.masterData);
                     
                     // 画面を更新
                     this.renderTable();
-                    this.updateSummary();
+                    await this.updateSummary();
                     this.markDirty();
                     
                     this.closeMasterModal();
@@ -2080,7 +2144,7 @@
             }
 
             // 前年同日のデータ取得
-            getPreviousYearData() {
+            async getPreviousYearData() {
                 try {
                     const targetDate = document.getElementById('target-date').value;
                     const storeId = document.getElementById('store').value;
@@ -2090,7 +2154,15 @@
                     const prevYearDateStr = prevYear.toISOString().slice(0, 10);
                     
                     const prevYearKey = `yousei:${storeId}:${prevYearDateStr}`;
-                    const prevYearData = localStorage.getItem(prevYearKey);
+                    let prevYearData;
+                    if (window.gdriveStorage && window.gdriveStorage.isConnected()) {
+                        prevYearData = await window.gdriveStorage.getItem(prevYearKey);
+                        if (prevYearData && typeof prevYearData === 'object') {
+                            prevYearData = JSON.stringify(prevYearData);
+                        }
+                    } else {
+                        prevYearData = localStorage.getItem(prevYearKey);
+                    }
                     
                     if (prevYearData) {
                         const parsed = JSON.parse(prevYearData);
