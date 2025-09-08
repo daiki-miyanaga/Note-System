@@ -793,11 +793,11 @@
                         <div class="value" id="total-arrival">0個</div>
                     </div>
                     <div class="summary-card">
-                        <div class="label">売上個数</div>
+                        <div class="label">販売数量</div>
                         <div class="value" id="total-sales-qty">0個</div>
                     </div>
                     <div class="summary-card">
-                        <div class="label">売上金額(税抜)</div>
+                        <div class="label">売上金額(税込)</div>
                         <div class="value" id="total-revenue">¥0</div>
                     </div>
                     <div class="summary-card">
@@ -864,15 +864,14 @@
                             <tr>
                                 <th>商品コード</th>
                                 <th>商品名</th>
-                                <th>単価(税抜)</th>
+                                <th>単価(税込)</th>
                                 <th>入荷</th>
                                 <th>前日持越</th>
-                                <th>店間移動(±)</th>
                                 <th>ロス</th>
                                 <th>閉店時在庫</th>
                                 <th>完売時間</th>
-                                <th>売上個数</th>
-                                <th>売上金額(税抜)</th>
+                                <th>販売数量</th>
+                                <th>売上金額(税込)</th>
                                 <th>予約数</th>
                                 <th>備考</th>
                                 <th>操作</th>
@@ -1099,14 +1098,18 @@
                 try {
                     const targetDate = document.getElementById('target-date').value;
                     const storeId = document.getElementById('store').value;
-                    const key = `yousei:${storeId}:${targetDate}`;
+                    const keyNew = `wns.v1.day.${storeId}.${targetDate}`;
+                    const keyLegacy = `yousei:${storeId}:${targetDate}`;
                     
                     let savedData = null;
                     
                     // 優先順位：GAS → Google Drive → LocalStorage
                     try {
                         if (window.gasStorage && window.gasStorage.isConnected()) {
-                            savedData = await window.gasStorage.getItem(key);
+                            savedData = await window.gasStorage.getItem(keyNew);
+                            if (!savedData) {
+                                savedData = await window.gasStorage.getItem(keyLegacy);
+                            }
                             if (savedData) {
                                 console.log('Data loaded from GAS');
                             }
@@ -1118,7 +1121,10 @@
                     if (!savedData) {
                         try {
                             if (window.gdriveStorage && window.gdriveStorage.isConnected()) {
-                                savedData = await window.gdriveStorage.getItem(key);
+                                savedData = await window.gdriveStorage.getItem(keyNew);
+                                if (!savedData) {
+                                    savedData = await window.gdriveStorage.getItem(keyLegacy);
+                                }
                                 if (savedData && typeof savedData === 'object') {
                                     savedData = JSON.stringify(savedData);
                                 }
@@ -1132,7 +1138,7 @@
                     }
                     
                     if (!savedData) {
-                        savedData = localStorage.getItem(key);
+                        savedData = localStorage.getItem(keyNew) || localStorage.getItem(keyLegacy);
                         if (savedData) {
                             console.log('Data loaded from LocalStorage');
                         }
@@ -1178,7 +1184,8 @@
                 try {
                     const targetDate = document.getElementById('target-date').value;
                     const storeId = document.getElementById('store').value;
-                    const key = `yousei:${storeId}:${targetDate}`;
+                    const keyNew = `wns.v1.day.${storeId}.${targetDate}`;
+                    const keyLegacy = `yousei:${storeId}:${targetDate}`;
                     
                     const saveData = {
                         header: {
@@ -1193,24 +1200,33 @@
                     // 複数のストレージに並行保存
                     const savePromises = [];
                     
-                    // LocalStorage に保存（常に実行）
-                    localStorage.setItem(key, JSON.stringify(saveData));
+                    // LocalStorage に保存（新キー）。後方互換のためレガシーキーにも保存
+                    localStorage.setItem(keyNew, JSON.stringify(saveData));
+                    localStorage.setItem(keyLegacy, JSON.stringify(saveData));
                     
                     // Google Drive に保存（接続済みの場合）
                     if (window.gdriveStorage && window.gdriveStorage.isConnected()) {
                         savePromises.push(
-                            window.gdriveStorage.setItem(key, saveData).catch(error => {
+                            window.gdriveStorage.setItem(keyNew, saveData).catch(error => {
                                 console.warn('Google Drive save failed:', error);
                             })
+                        );
+                        // 後方互換（任意）：レガシーキーにも保存
+                        savePromises.push(
+                            window.gdriveStorage.setItem(keyLegacy, saveData).catch(() => {})
                         );
                     }
                     
                     // GAS に保存（接続済みの場合）
                     if (window.gasStorage && window.gasStorage.isConnected()) {
                         savePromises.push(
-                            window.gasStorage.setItem(key, JSON.stringify(saveData)).catch(error => {
+                            window.gasStorage.setItem(keyNew, JSON.stringify(saveData)).catch(error => {
                                 console.warn('GAS save failed:', error);
                             })
+                        );
+                        // 後方互換（任意）：レガシーキーにも保存
+                        savePromises.push(
+                            window.gasStorage.setItem(keyLegacy, JSON.stringify(saveData)).catch(() => {})
                         );
                     }
                     
@@ -1245,17 +1261,15 @@
                 row.innerHTML = `
                     <td><input type="text" class="table-input" data-field="code" value="${item.code || ''}" placeholder="商品コード" data-code-input="true"></td>
                     <td><input type="text" class="table-input" data-field="name" value="${item.name || ''}" readonly></td>
-                    <td>¥${this.formatNumber(item.priceEx || 0)}</td>
+                    <td>¥${this.formatNumber(Math.round((item.priceEx || 0) * (1 + (typeof item.taxRate === 'number' ? item.taxRate : 0.1))))}</td>
                     <td><input type="number" class="table-input" data-field="arrival" value="${item.arrival || 0}" min="0" step="1" data-popup-trigger="true" title="修正モード時にフォーカスすると参照データが表示されます"></td>
                     <td><input type="number" class="table-input" data-field="carryPrev" value="${item.carryPrev || 0}" min="0" step="1"></td>
-                    <td><input type="number" class="table-input" data-field="movement" value="${item.movement || 0}" step="1"></td>
                     <td><input type="number" class="table-input" data-field="waste" value="${item.waste || 0}" min="0" step="1"></td>
                     <td><input type="number" class="table-input" data-field="endStock" value="${item.endStock || 0}" min="0" step="1"></td>
                     <td><input type="time" class="table-input" data-field="soldoutTime" value="${item.soldoutTime || ''}"></td>
                     <td><div class="calculated-value">${item.salesQty || 0}</div></td>
-                    <td><div class="calculated-value">¥${this.formatNumber(item.revenueEx || 0)}</div></td>
+                    <td><div class="calculated-value">¥${this.formatNumber(item.revenueIncl || 0)}</div></td>
                     <td><input type="number" class="table-input" data-field="reservation" value="${item.reservation || 0}" min="0" step="1" data-popup-trigger="true" title="修正モード時にフォーカスすると参照データが表示されます"></td>
-                    <td><input type="text" class="table-input" data-field="reference" value="${item.reference || ''}"></td>
                     <td><input type="text" class="table-input" data-field="remarks" value="${item.remarks || ''}"></td>
                     <td><button class="btn btn-warning delete-row-btn" onclick="youseiApp.deleteRow('${item.id}')">🗑️</button></td>
                 `;
@@ -1367,8 +1381,8 @@
                                     <div class="value">${item.code || 'N/A'}</div>
                                 </div>
                                 <div class="reference-card">
-                                    <div class="title">単価(税抜)</div>
-                                    <div class="value">¥${this.formatNumber(item.priceEx || 0)}</div>
+                                    <div class="title">単価(税込)</div>
+                                    <div class="value">¥${this.formatNumber(Math.round((item.priceEx || 0) * (1 + (typeof item.taxRate === 'number' ? item.taxRate : 0.1))))}</div>
                                 </div>
                                 <div class="reference-card">
                                     <div class="title">発注単位</div>
@@ -1442,19 +1456,21 @@
 
             performCalculations(item) {
                 try {
-                    // 売上個数 = max(0, 入荷 + 前日持越し + 店間移動(±) - 閉店時在庫 - ロス)
+                    // 売上数量 = max(0, 入荷 + 前日持越し - 閉店時在庫 - ロス)
                     const arrival = parseFloat(item.arrival) || 0;
                     const carryPrev = parseFloat(item.carryPrev) || 0;
-                    const movement = parseFloat(item.movement) || 0;
                     const endStock = parseFloat(item.endStock) || 0;
                     const waste = parseFloat(item.waste) || 0;
                     
-                    item.salesQty = Math.max(0, arrival + carryPrev + movement - endStock - waste);
+                    item.salesQty = Math.max(0, arrival + carryPrev - endStock - waste);
+
+                    // 単価(税込) = round(priceEx * (1+taxRate))
+                    const taxRate = (typeof item.taxRate === 'number') ? item.taxRate : 0.1;
+                    const priceIncl = Math.round((parseFloat(item.priceEx) || 0) * (1 + taxRate));
+                    // 売上金額(税込) = 売上数量 × 単価(税込)
+                    item.revenueIncl = item.salesQty * priceIncl;
                     
-                    // 売上金額(税抜) = 売上個数 × 税抜単価
-                    item.revenueEx = item.salesQty * item.priceEx;
-                    
-                    // D+1/D+2予算金額の計算
+                    // D+1/D+2予算金額の計算（税抜ベースのまま）
                     item.budget_d1.amountEx = item.budget_d1.qty * item.priceEx;
                     item.budget_d2.amountEx = item.budget_d2.qty * item.priceEx;
                     
@@ -1468,7 +1484,7 @@
                     const itemCount = this.data.length;
                     const totalArrival = this.data.reduce((sum, item) => sum + (parseFloat(item.arrival) || 0), 0);
                     const totalSalesQty = this.data.reduce((sum, item) => sum + (parseFloat(item.salesQty) || 0), 0);
-                    const totalRevenue = this.data.reduce((sum, item) => sum + (parseFloat(item.revenueEx) || 0), 0);
+                    const totalRevenue = this.data.reduce((sum, item) => sum + (parseFloat(item.revenueIncl) || 0), 0);
                     const totalWaste = this.data.reduce((sum, item) => sum + (parseFloat(item.waste) || 0), 0);
                     
                     // 完売警告件数（endStock=0 かつ soldoutTime入力あり）
@@ -1673,7 +1689,7 @@
                     if (!item) return;
 
                     // 数値フィールドの処理
-                    if (['arrival', 'carryPrev', 'movement', 'waste', 'endStock', 'reservation'].includes(field)) {
+                    if (['arrival', 'carryPrev', 'waste', 'endStock', 'reservation'].includes(field)) {
                         item[field] = parseFloat(value) || 0;
                         
                         // 入荷数の発注単位チェック
@@ -1801,12 +1817,12 @@
 
             updateRowDisplay(row, item) {
                 const calculatedValues = row.querySelectorAll('.calculated-value');
-                calculatedValues[0].textContent = item.salesQty || 0; // 売上個数
-                calculatedValues[1].textContent = `¥${this.formatNumber(item.revenueEx || 0)}`; // 売上金額
+                calculatedValues[0].textContent = item.salesQty || 0; // 販売数量
+                calculatedValues[1].textContent = `¥${this.formatNumber(item.revenueIncl || 0)}`; // 売上金額(税込)
             }
 
 
-            deleteRow(itemId) {
+            async deleteRow(itemId) {
                 if (confirm('この行を削除しますか？')) {
                     this.data = this.data.filter(item => item.id !== itemId);
                     this.renderTable();
@@ -1828,50 +1844,35 @@
             exportToCSV() {
                 try {
                     const headers = [
-                        '商品C', '商品名', '単価(税抜)', '入荷', '前日持越し', '店間移動(±)', 'ロス', '閉店時在庫', 
-                        '完売時間', '売上個数', '売上金額(税抜)', '予約数', '参照項目', '備考', 
-                        'D+1予算(個)', 'D+1予算金額(税抜)', 'D+2予算(個)', 'D+2予算金額(税抜)'
+                        'date', 'storeId', 'code', 'name', 'priceIncl',
+                        'arrival', 'carryPrev', 'reservation', 'waste', 'endStock',
+                        'soldoutTime', 'salesQty', 'revenueIncl'
                     ];
 
                     const headerInfo = {
                         date: document.getElementById('target-date').value,
-                        dayOfWeek: document.getElementById('day-of-week').value,
-                        weather: document.getElementById('weather').value,
-                        temperature: document.getElementById('temperature').value
+                        storeId: document.getElementById('store').value
                     };
 
-                    // D+1/D+2予算合計
-                    const d1BudgetQty = this.data.reduce((sum, item) => sum + (item.budget_d1.qty || 0), 0);
-                    const d1BudgetAmount = this.data.reduce((sum, item) => sum + (item.budget_d1.amountEx || 0), 0);
-                    const d2BudgetQty = this.data.reduce((sum, item) => sum + (item.budget_d2.qty || 0), 0);
-                    const d2BudgetAmount = this.data.reduce((sum, item) => sum + (item.budget_d2.amountEx || 0), 0);
-
-                    let csvContent = `# 洋生ノート - ${headerInfo.date} (${headerInfo.dayOfWeek})\n`;
-                    csvContent += `# 天気: ${headerInfo.weather}, 気温: ${headerInfo.temperature}℃\n`;
-                    csvContent += `# D+1予算 合計：${d1BudgetQty}個 / ¥${this.formatNumber(d1BudgetAmount)}\n`;
-                    csvContent += `# D+2予算 合計：${d2BudgetQty}個 / ¥${this.formatNumber(d2BudgetAmount)}\n\n`;
-                    csvContent += headers.join(',') + '\n';
+                    let csvContent = headers.join(',') + '\n';
 
                     this.data.forEach(item => {
+                        const taxRate = (typeof item.taxRate === 'number') ? item.taxRate : 0.1;
+                        const priceIncl = Math.round((parseFloat(item.priceEx) || 0) * (1 + taxRate));
                         const row = [
+                            headerInfo.date,
+                            headerInfo.storeId,
                             item.code || '',
-                            `"${item.name || ''}"`,
-                            item.priceEx || 0,
+                            `"${(item.name || '').replace(/"/g, '""')}"`,
+                            priceIncl,
                             item.arrival || 0,
                             item.carryPrev || 0,
-                            item.movement || 0,
+                            item.reservation || 0,
                             item.waste || 0,
                             item.endStock || 0,
                             `"${item.soldoutTime || ''}"`,
                             item.salesQty || 0,
-                            item.revenueEx || 0,
-                            item.reservation || 0,
-                            `"${item.reference || ''}"`,
-                            `"${item.remarks || ''}"`,
-                            item.budget_d1.qty || 0,
-                            item.budget_d1.amountEx || 0,
-                            item.budget_d2.qty || 0,
-                            item.budget_d2.amountEx || 0
+                            (item.revenueIncl || 0)
                         ];
                         csvContent += row.join(',') + '\n';
                     });
@@ -1974,15 +1975,19 @@
                     prevDay.setDate(target.getDate() - 1);
                     const prevDateStr = prevDay.toISOString().slice(0, 10);
                     
-                    const prevKey = `yousei:${storeId}:${prevDateStr}`;
+                    const prevKeyNew = `wns.v1.day.${storeId}.${prevDateStr}`;
+                    const prevKeyLegacy = `yousei:${storeId}:${prevDateStr}`;
                     let prevData;
                     if (window.gdriveStorage && window.gdriveStorage.isConnected()) {
-                        prevData = await window.gdriveStorage.getItem(prevKey);
+                        prevData = await window.gdriveStorage.getItem(prevKeyNew);
+                        if (!prevData) {
+                            prevData = await window.gdriveStorage.getItem(prevKeyLegacy);
+                        }
                         if (prevData && typeof prevData === 'object') {
                             prevData = JSON.stringify(prevData);
                         }
                     } else {
-                        prevData = localStorage.getItem(prevKey);
+                        prevData = localStorage.getItem(prevKeyNew) || localStorage.getItem(prevKeyLegacy);
                     }
                     
                     if (prevData) {
@@ -2214,21 +2219,30 @@
                     prevYear.setFullYear(target.getFullYear() - 1);
                     const prevYearDateStr = prevYear.toISOString().slice(0, 10);
                     
-                    const prevYearKey = `yousei:${storeId}:${prevYearDateStr}`;
+                    const prevYearKeyNew = `wns.v1.day.${storeId}.${prevYearDateStr}`;
+                    const prevYearKeyLegacy = `yousei:${storeId}:${prevYearDateStr}`;
                     let prevYearData;
                     if (window.gdriveStorage && window.gdriveStorage.isConnected()) {
-                        prevYearData = await window.gdriveStorage.getItem(prevYearKey);
+                        prevYearData = await window.gdriveStorage.getItem(prevYearKeyNew);
+                        if (!prevYearData) {
+                            prevYearData = await window.gdriveStorage.getItem(prevYearKeyLegacy);
+                        }
                         if (prevYearData && typeof prevYearData === 'object') {
                             prevYearData = JSON.stringify(prevYearData);
                         }
                     } else {
-                        prevYearData = localStorage.getItem(prevYearKey);
+                        prevYearData = localStorage.getItem(prevYearKeyNew) || localStorage.getItem(prevYearKeyLegacy);
                     }
                     
                     if (prevYearData) {
                         const parsed = JSON.parse(prevYearData);
                         const prevYearDetails = parsed.details || [];
-                        const totalRevenue = prevYearDetails.reduce((sum, item) => sum + (parseFloat(item.revenueEx) || 0), 0);
+                        const totalRevenue = prevYearDetails.reduce((sum, it) => {
+                            const taxRate = (typeof it.taxRate === 'number') ? it.taxRate : 0.1;
+                            const priceIncl = Math.round((parseFloat(it.priceEx) || 0) * (1 + taxRate));
+                            const revenueIncl = (parseFloat(it.salesQty) || 0) * priceIncl;
+                            return sum + revenueIncl;
+                        }, 0);
                         return { totalRevenue, details: prevYearDetails };
                     }
                     
@@ -2285,7 +2299,9 @@
                     
                     // 売上金額を計算
                     Object.keys(sampleData).forEach(key => {
-                        sampleData[key].revenue = sampleData[key].sales * (item.priceEx || 0);
+                        const taxRate = (typeof item.taxRate === 'number') ? item.taxRate : 0.1;
+                        const priceIncl = Math.round((item.priceEx || 0) * (1 + taxRate));
+                        sampleData[key].revenue = sampleData[key].sales * priceIncl;
                     });
                     
                     return sampleData;
