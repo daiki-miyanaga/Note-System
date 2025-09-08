@@ -5,7 +5,8 @@
  */
 
 // スプレッドシートID（データ保存用）
-const SPREADSHEET_ID = ''; // デプロイ時に設定
+// スプレッドシートIDの設定（空の場合は自動作成される）
+const SPREADSHEET_ID = ''; // 手動設定する場合はここにIDを入力、空の場合は自動作成
 
 // メイン処理関数 (GET/POST 両方対応)
 function doGet(e) {
