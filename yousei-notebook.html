@@ -725,6 +725,8 @@
     <!-- Google Drive Storage Scripts -->
     <script src="gdrive-storage.js"></script>
     <script src="gdrive-config.js"></script>
+    <script src="gas-storage.js"></script>
+    <script src="gas-config.js"></script>
 </head>
 <body>
     <!-- Header -->
@@ -833,6 +835,7 @@
                     <button id="save-btn" class="btn btn-primary">💾 保存</button>
                     <button id="export-csv-btn" class="btn btn-secondary">📤 CSV出力</button>
                     <button id="gdrive-config-btn" class="btn btn-secondary">☁️ GDrive設定</button>
+                    <button id="gas-config-btn" class="btn btn-secondary">🔧 GAS設定</button>
                     
                     <div style="display: flex; align-items: center; gap: var(--spacing-sm);">
                         <span>修正モード</span>
@@ -1098,14 +1101,41 @@
                     const storeId = document.getElementById('store').value;
                     const key = `yousei:${storeId}:${targetDate}`;
                     
-                    let savedData;
-                    if (window.gdriveStorage && window.gdriveStorage.isConnected()) {
-                        savedData = await window.gdriveStorage.getItem(key);
-                        if (savedData && typeof savedData === 'object') {
-                            savedData = JSON.stringify(savedData);
+                    let savedData = null;
+                    
+                    // 優先順位：GAS → Google Drive → LocalStorage
+                    try {
+                        if (window.gasStorage && window.gasStorage.isConnected()) {
+                            savedData = await window.gasStorage.getItem(key);
+                            if (savedData) {
+                                console.log('Data loaded from GAS');
+                            }
                         }
-                    } else {
+                    } catch (error) {
+                        console.warn('GAS load failed:', error);
+                    }
+                    
+                    if (!savedData) {
+                        try {
+                            if (window.gdriveStorage && window.gdriveStorage.isConnected()) {
+                                savedData = await window.gdriveStorage.getItem(key);
+                                if (savedData && typeof savedData === 'object') {
+                                    savedData = JSON.stringify(savedData);
+                                }
+                                if (savedData) {
+                                    console.log('Data loaded from Google Drive');
+                                }
+                            }
+                        } catch (error) {
+                            console.warn('Google Drive load failed:', error);
+                        }
+                    }
+                    
+                    if (!savedData) {
                         savedData = localStorage.getItem(key);
+                        if (savedData) {
+                            console.log('Data loaded from LocalStorage');
+                        }
                     }
                     if (savedData) {
                         const parsed = JSON.parse(savedData);
@@ -1160,10 +1190,33 @@
                         details: this.data
                     };
                     
+                    // 複数のストレージに並行保存
+                    const savePromises = [];
+                    
+                    // LocalStorage に保存（常に実行）
+                    localStorage.setItem(key, JSON.stringify(saveData));
+                    
+                    // Google Drive に保存（接続済みの場合）
                     if (window.gdriveStorage && window.gdriveStorage.isConnected()) {
-                        await window.gdriveStorage.setItem(key, saveData);
-                    } else {
-                        localStorage.setItem(key, JSON.stringify(saveData));
+                        savePromises.push(
+                            window.gdriveStorage.setItem(key, saveData).catch(error => {
+                                console.warn('Google Drive save failed:', error);
+                            })
+                        );
+                    }
+                    
+                    // GAS に保存（接続済みの場合）
+                    if (window.gasStorage && window.gasStorage.isConnected()) {
+                        savePromises.push(
+                            window.gasStorage.setItem(key, JSON.stringify(saveData)).catch(error => {
+                                console.warn('GAS save failed:', error);
+                            })
+                        );
+                    }
+                    
+                    // 並行実行（エラーがあってもローカル保存は成功）
+                    if (savePromises.length > 0) {
+                        await Promise.allSettled(savePromises);
                     }
                     
                     this.clearDirty();
@@ -1535,6 +1588,14 @@
                         window.gdriveConfig.createConfigUI();
                     } else {
                         this.showAlert('error', 'Google Drive 設定が利用できません');
+                    }
+                });
+
+                document.getElementById('gas-config-btn').addEventListener('click', () => {
+                    if (window.gasConfig) {
+                        window.gasConfig.createConfigUI();
+                    } else {
+                        this.showAlert('error', 'GAS 設定が利用できません');
                     }
                 });
 
@@ -2254,6 +2315,18 @@
         document.addEventListener('DOMContentLoaded', async () => {
             window.youseiApp = new YouseiNotebook();
             await window.youseiApp.init();
+            
+            // GAS 設定の自動初期化
+            if (window.gasConfig && window.gasConfig.isConfigured()) {
+                try {
+                    const gasConnected = await window.gasConfig.autoInit();
+                    if (gasConnected) {
+                        console.log('🔧 GAS連携が有効になりました');
+                    }
+                } catch (error) {
+                    console.warn('GAS auto init failed:', error);
+                }
+            }
             
             console.log('🧁 洋生ノート v1.2が正常に起動しました');
         });
