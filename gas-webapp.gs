@@ -27,7 +27,24 @@ function handleRequest(params) {
         const action = params.action;
         
         if (!action) {
-            return createResponse('error', 'Action parameter is required');
+            // デフォルトの情報レスポンスを返す
+            return createResponse('success', {
+                message: '洋生ノート GAS Web API',
+                version: '1.0',
+                usage: 'Add ?action=ping to test the connection, or use POST with JSON data',
+                availableActions: [
+                    'ping - Connection test',
+                    'setItem - Save data',
+                    'getItem - Retrieve data',
+                    'removeItem - Delete data', 
+                    'getAllItems - Get all items',
+                    'getDateRange - Get data by date range',
+                    'getPreviousYearData - Get previous year data',
+                    'createBackup - Create backup',
+                    'getSyncStatus - Get sync status'
+                ],
+                example: 'Add ?action=ping to the URL to test the connection'
+            });
         }
 
         console.log(`Processing action: ${action}`);
