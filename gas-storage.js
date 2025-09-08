@@ -4,13 +4,11 @@
  * Google Cloud Console不要、GAS Webアプリで認証なしアクセス
  */
 
-class GASStorage {
+class GASStorage extends BaseStorage {
     constructor() {
+        super('gasStorage');
         this.webAppUrl = null;
-        this.initialized = false;
         this.storeId = null;
-        this.retryCount = 3;
-        this.timeout = 10000; // 10秒
     }
 
     // 初期化
@@ -114,22 +112,33 @@ class GASStorage {
         }
     }
 
+    // BaseStorage interface implementation
+    async save(key, data) {
+        return await this.setItem(key, data);
+    }
+
     // データ保存
     async setItem(key, value) {
         try {
-            if (!this.initialized) {
+            if (!this.isInitialized()) {
                 throw new Error('GAS Storage not initialized');
             }
 
+            this.validateData(value);
+            const storageKey = this.generateKey(this.storeId, key);
+
             const result = await this.makeRequest('POST', {
                 action: 'setItem',
-                key: key,
+                key: storageKey,
                 value: typeof value === 'string' ? value : JSON.stringify(value),
                 storeId: this.storeId,
                 timestamp: new Date().toISOString()
             });
 
-            if (result.status === 'success') {
+            const success = result.status === 'success';
+            this.logOperation('save', storageKey, success, result.error);
+
+            if (success) {
                 return true;
             } else {
                 throw new Error(result.error || 'Save failed');
@@ -140,18 +149,27 @@ class GASStorage {
         }
     }
 
+    // BaseStorage interface implementation
+    async load(key) {
+        return await this.getItem(key);
+    }
+
     // データ取得
     async getItem(key) {
         try {
-            if (!this.initialized) {
+            if (!this.isInitialized()) {
                 throw new Error('GAS Storage not initialized');
             }
 
+            const storageKey = this.generateKey(this.storeId, key);
             const result = await this.makeRequest('GET', {
                 action: 'getItem',
-                key: key,
+                key: storageKey,
                 storeId: this.storeId
             });
+
+            const success = result.status === 'success' || result.status === 'not_found';
+            this.logOperation('load', storageKey, success, result.error);
 
             if (result.status === 'success') {
                 return result.data;
@@ -357,6 +375,17 @@ class GASStorage {
             console.error('Sync with localStorage failed:', error);
             return false;
         }
+    }
+
+    // BaseStorage interface implementation - additional methods
+    async delete(key) {
+        // Implementation for delete operation if needed
+        throw new Error('Delete operation not implemented for GAS storage');
+    }
+
+    async list() {
+        // Implementation for listing all keys if needed
+        throw new Error('List operation not implemented for GAS storage');
     }
 }
 

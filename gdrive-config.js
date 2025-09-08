@@ -96,13 +96,13 @@ class GDriveConfig {
                     <h3 style="color: #666; margin-bottom: 10px;">🔑 API 認証情報</h3>
                     <div style="margin-bottom: 15px;">
                         <label style="display: block; margin-bottom: 5px; font-weight: 500;">Client ID:</label>
-                        <input type="text" id="gdrive-client-id" value="${this.config.clientId}" 
+                        <input type="text" id="gdrive-client-id" value="${this.get('clientId')}" 
                                style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"
                                placeholder="Google Cloud Console から取得">
                     </div>
                     <div style="margin-bottom: 15px;">
                         <label style="display: block; margin-bottom: 5px; font-weight: 500;">API Key:</label>
-                        <input type="text" id="gdrive-api-key" value="${this.config.apiKey}"
+                        <input type="text" id="gdrive-api-key" value="${this.get('apiKey')}"
                                style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"
                                placeholder="Google Cloud Console から取得">
                     </div>
@@ -112,7 +112,7 @@ class GDriveConfig {
                     <h3 style="color: #666; margin-bottom: 10px;">📁 保存先フォルダ</h3>
                     <div style="margin-bottom: 15px;">
                         <label style="display: block; margin-bottom: 5px; font-weight: 500;">フォルダID (オプション):</label>
-                        <input type="text" id="gdrive-folder-id" value="${this.config.folderId}"
+                        <input type="text" id="gdrive-folder-id" value="${this.get('folderId')}"
                                style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"
                                placeholder="空欄の場合は自動でフォルダを作成">
                         <small style="color: #666;">Google Drive で右クリック > 「リンクを取得」から URL のフォルダ ID を取得できます</small>
@@ -120,7 +120,7 @@ class GDriveConfig {
                 </div>
 
                 <div class="config-status" style="margin-bottom: 20px; padding: 10px; background: #f8f9fa; border-radius: 4px;">
-                    <strong>現在の状態:</strong> ${this.config.enabled ? '🟢 有効' : '🔴 無効'}
+                    <strong>現在の状態:</strong> ${this.isEnabled() ? '🟢 有効' : '🔴 無効'}
                 </div>
 
                 <div class="config-actions" style="display: flex; gap: 10px; justify-content: flex-end;">

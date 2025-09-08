@@ -4,38 +4,21 @@
  * Google Cloud Console不要のシンプルな設定
  */
 
-class GASConfig {
+class GASConfig extends BaseConfig {
     constructor() {
-        this.config = this.loadConfig();
-        this.statusCheckInterval = null;
-    }
-
-    // 設定を読み込み
-    loadConfig() {
-        try {
-            const saved = localStorage.getItem('gasConfig');
-            if (saved) {
-                return JSON.parse(saved);
+        const constants = window.CONFIG_CONSTANTS;
+        super(
+            constants?.STORAGE_KEYS.GAS_CONFIG || 'gasConfig',
+            constants?.DEFAULT_CONFIGS.GAS || {
+                webAppUrl: '',
+                storeId: 'KRB01',
+                enabled: false,
+                autoSync: true,
+                syncInterval: 300000, // 5分
+                lastSync: null
             }
-        } catch (error) {
-            console.error('GAS Config load error:', error);
-        }
-
-        // デフォルト設定
-        return {
-            webAppUrl: '',
-            storeId: 'KRB01',
-            enabled: false,
-            autoSync: true,
-            syncInterval: 300000, // 5分
-            lastSync: null
-        };
-    }
-
-    // 設定を保存
-    saveConfig(config) {
-        this.config = { ...this.config, ...config };
-        localStorage.setItem('gasConfig', JSON.stringify(this.config));
+        );
+        this.statusCheckInterval = null;
     }
 
     // GAS ウェブアプリを有効化
@@ -43,15 +26,14 @@ class GASConfig {
         try {
             const success = await window.gasStorage.init(webAppUrl, storeId);
             if (success) {
-                this.saveConfig({
+                super.enable({
                     webAppUrl: webAppUrl,
                     storeId: storeId,
-                    enabled: true,
                     lastSync: new Date().toISOString()
                 });
                 
                 // 自動同期を開始
-                if (this.config.autoSync) {
+                if (this.get('autoSync')) {
                     this.startAutoSync();
                 }
                 
@@ -66,9 +48,7 @@ class GASConfig {
 
     // GAS ウェブアプリを無効化
     disable() {
-        this.saveConfig({
-            enabled: false
-        });
+        super.disable();
         
         // 自動同期を停止
         this.stopAutoSync();
@@ -80,16 +60,16 @@ class GASConfig {
             clearInterval(this.statusCheckInterval);
         }
 
-        if (this.config.enabled && this.config.autoSync) {
+        if (this.isEnabled() && this.get('autoSync')) {
             this.statusCheckInterval = setInterval(async () => {
                 try {
                     await this.performAutoSync();
                 } catch (error) {
                     console.error('Auto sync failed:', error);
                 }
-            }, this.config.syncInterval);
+            }, this.get('syncInterval'));
             
-            console.log(`Auto sync started (interval: ${this.config.syncInterval / 1000}s)`);
+            console.log(`Auto sync started (interval: ${this.get('syncInterval') / 1000}s)`);
         }
     }
 
@@ -104,16 +84,14 @@ class GASConfig {
 
     // 自動同期実行
     async performAutoSync() {
-        if (!this.config.enabled || !window.gasStorage.isConnected()) {
+        if (!this.isEnabled() || !window.gasStorage.isConnected()) {
             return false;
         }
 
         try {
             const success = await window.gasStorage.syncWithLocalStorage();
             if (success) {
-                this.saveConfig({
-                    lastSync: new Date().toISOString()
-                });
+                this.set('lastSync', new Date().toISOString());
             }
             return success;
         } catch (error) {
@@ -124,7 +102,7 @@ class GASConfig {
 
     // 手動同期実行
     async performManualSync() {
-        if (!this.config.enabled) {
+        if (!this.isEnabled()) {
             throw new Error('GAS is not enabled');
         }
 
@@ -167,7 +145,7 @@ class GASConfig {
                     <h3 style="color: #666; margin-bottom: 15px;">🌐 ウェブアプリURL</h3>
                     <div style="margin-bottom: 15px;">
                         <label style="display: block; margin-bottom: 5px; font-weight: 500;">GAS ウェブアプリ URL:</label>
-                        <input type="url" id="gas-webapp-url" value="${this.config.webAppUrl}" 
+                        <input type="url" id="gas-webapp-url" value="${this.get('webAppUrl')}" 
                                style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;"
                                placeholder="https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec">
                         <small style="color: #666; display: block; margin-top: 5px;">
@@ -176,7 +154,7 @@ class GASConfig {
                     </div>
                     <div style="margin-bottom: 15px;">
                         <label style="display: block; margin-bottom: 5px; font-weight: 500;">店舗ID:</label>
-                        <input type="text" id="gas-store-id" value="${this.config.storeId}"
+                        <input type="text" id="gas-store-id" value="${this.get('storeId')}"
                                style="width: 200px; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"
                                placeholder="KRB01">
                         <small style="color: #666; display: block; margin-top: 5px;">
@@ -189,7 +167,7 @@ class GASConfig {
                     <h3 style="color: #666; margin-bottom: 15px;">⚙️ 同期設定</h3>
                     <div style="margin-bottom: 15px;">
                         <label style="display: flex; align-items: center; gap: 8px;">
-                            <input type="checkbox" id="gas-auto-sync" ${this.config.autoSync ? 'checked' : ''}>
+                            <input type="checkbox" id="gas-auto-sync" ${this.get('autoSync') ? 'checked' : ''}>
                             <span>自動同期を有効にする</span>
                         </label>
                         <small style="color: #666; display: block; margin-top: 5px;">
