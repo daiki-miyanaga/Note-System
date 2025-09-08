@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ゆうなまノート - 入荷数変更＋過去参照 一体型システム v1.2</title>
+    <title>洋生（ようなま）ノート - 入荷数変更＋過去参照 一体型システム v1.2</title>
     
     <style>
         /* CSS Reset & Base Styles */
@@ -724,6 +724,7 @@
     
     <!-- Base Configuration and Storage Scripts -->
     <script src="base-config.js"></script>
+    <script src="base-storage.js"></script>
     <script src="gdrive-storage.js"></script>
     <script src="gdrive-config.js"></script>
     <script src="gas-storage.js"></script>
@@ -736,7 +737,7 @@
             <div class="header-content">
                 <div class="header-title">
                     <span>🧁</span>
-                    <h1>ゆうなまノート</h1>
+                    <h1>洋生（ようなま）ノート</h1>
                 </div>
                 
                 <div class="header-info">
@@ -978,7 +979,7 @@
     </div>
 
     <script>
-        // ゆうなまノート v1.2 メインアプリケーション
+        // 洋生（ようなま）ノート v1.2 メインアプリケーション
         class YounameNotebook {
             constructor() {
                 this.data = [];
@@ -1087,11 +1088,11 @@
                     this.attachEventListeners();
                     this.startAutoSave();
                     
-                    this.showAlert('success', 'ゆうなまノートが正常に読み込まれました');
+                    this.showAlert('success', '洋生（ようなま）ノートが正常に読み込まれました');
                     
                 } catch (error) {
                     console.error('初期化エラー:', error);
-                    this.showAlert('error', 'ゆうなまノートの初期化に失敗しました');
+                    this.showAlert('error', '洋生（ようなま）ノートの初期化に失敗しました');
                 }
             }
 
@@ -1559,6 +1560,17 @@
             attachEventListeners() {
                 console.log('📋 イベントリスナーを設定中...');
                 
+                // ボタン要素の存在確認
+                const recalculateBtn = document.getElementById('recalculate-btn');
+                const saveBtn = document.getElementById('save-btn');
+                const exportBtn = document.getElementById('export-csv-btn');
+                
+                console.log('ボタン要素確認:', {
+                    recalculateBtn: !!recalculateBtn,
+                    saveBtn: !!saveBtn,
+                    exportBtn: !!exportBtn
+                });
+                
                 // DOM要素の存在確認
                 const requiredElements = [
                     'target-date', 'weather', 'temperature', 'store', 'modify-mode',
@@ -1613,9 +1625,9 @@
                 });
 
                 // 商品コード入力時の自動入力
-                document.addEventListener('blur', (e) => {
+                document.addEventListener('blur', async (e) => {
                     if (e.target.hasAttribute('data-code-input')) {
-                        this.handleCodeInput(e.target);
+                        await this.handleCodeInput(e.target);
                     }
                 });
 
@@ -1819,7 +1831,7 @@
                 }
             }
 
-            handleCodeInput(input) {
+            async handleCodeInput(input) {
                 try {
                     const code = input.value.trim();
                     if (!code) return;
@@ -2481,7 +2493,7 @@
                 }
             }
             
-            console.log('🧁 ゆうなまノート v1.2が正常に起動しました');
+            console.log('🧁 洋生（ようなま）ノート v1.2が正常に起動しました');
         });
     </script>
 </body>
